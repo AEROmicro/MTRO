@@ -59,7 +59,7 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.openstreetmap.fr/api/interpreter"
 ];
 const LIVE_REFRESH_INTERVAL_MS = 10000;
-const LIVE_ANIMATION_DURATION_MS = 9000;
+const LIVE_ANIMATION_DURATION_MS = 7000;
 const liveMarkers = new Map();
 let activeAnimationFrame = null;
 
@@ -368,11 +368,6 @@ function renderLiveTrains(trains) {
       markerLayer.removeLayer(entry.marker);
       liveMarkers.delete(id);
     }
-  }
-
-  if (!trains.length) {
-    clearLiveMarkers();
-    return;
   }
 
   const transitions = [];
