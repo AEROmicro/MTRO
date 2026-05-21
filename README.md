@@ -11,12 +11,20 @@ npm start
 
 Then open `http://localhost:8080`.
 
+## Cloudflare Pages support
+
+- This repo now includes a Pages Function at `functions/api/trains.js`.
+- On Cloudflare, the frontend uses `/api/trains` (same-origin proxy) to avoid browser CORS failures and to improve API reliability.
+- In self-host mode (plain static hosting), the app automatically falls back to direct browser API calls.
+
 ## Features
 
 - Defaults to **Washington, DC**
 - Sleek top-bar city filter and time snapshot filter
 - OpenStreetMap + live train markers
-- Browser-direct data loading (no backend proxy)
-- Uses no-key public feed support where available (currently Amtraker for supported US cities)
-- Includes 30+ city options including Tokyo, NYC, Paris, Chicago, Boston, and Zurich
+- Cloudflare-compatible same-origin API proxy with browser-direct self-host fallback
+- Uses no-key public feeds with fallback logic:
+  - Amtraker live train positions for supported US cities
+  - OpenStreetMap/Overpass railway-station fallback for all configured cities
+- Includes 30+ city options including Tokyo, NYC, Paris, Chicago, Boston, and Zurich, all with API-backed map data
 - In-session past-data snapshots for quick playback
