@@ -48,6 +48,16 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 const markerLayer = L.layerGroup().addTo(map);
 const historyByCity = new Map();
 let currentCity = CITIES[0];
+const API_PROXY_PATH = "/api/trains";
+const AMTRAKER_ENDPOINTS = [
+  "https://api-v3.amtraker.com/v3/trains",
+  "https://api-v3.amtraker.com/v1/trains"
+];
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.openstreetmap.fr/api/interpreter"
+];
 
 for (const city of CITIES) {
   const option = document.createElement("option");
@@ -92,29 +102,189 @@ function parseAmtraker(data, city) {
     .filter((train) => train && inBbox(train.lat, train.lon, city.bbox));
 }
 
-async function fetchCityTrains(city) {
-  if (city.provider !== "amtraker") {
-    return {
-      trains: [],
-      message: "No unrestricted public real-time train-position feed is configured for this city yet."
-    };
+function parseOverpass(data, city) {
+  const rows = Array.isArray(data?.elements) ? data.elements : [];
+  const trains = [];
+
+  for (const row of rows) {
+    if (row.type !== "node") {
+      continue;
+    }
+
+    const lat = Number(row.lat);
+    const lon = Number(row.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) {
+      continue;
+    }
+
+    const tags = row.tags || {};
+    const name = tags.name || tags.ref || "Rail stop";
+    trains.push({
+      id: String(row.id ?? `${lat},${lon}`),
+      line: name,
+      label: tags.operator || tags.network || "Railway station",
+      status: tags.railway || "station",
+      lat,
+      lon
+    });
   }
 
-  const response = await fetch("https://api-v3.amtraker.com/v1/trains", { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Data source unavailable (${response.status})`);
+  return trains.slice(0, 250);
+}
+
+async function fetchJsonFromFirstHealthy(urls, init, timeoutMs = 12000) {
+  let lastError = null;
+
+  for (const url of urls) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
-  const data = await response.json();
-  const trains = parseAmtraker(data, city);
+  throw lastError || new Error("No healthy API endpoint available");
+}
+
+function buildOverpassQuery(city) {
+  const [north, west, south, east] = city.bbox;
+  return `[out:json][timeout:20];node["railway"~"station|halt|tram_stop|subway_entrance"](${south},${west},${north},${east});out body 300;`;
+}
+
+async function fetchBrowserDirect(city) {
+  if (city.provider === "amtraker") {
+    try {
+      const amtrakerData = await fetchJsonFromFirstHealthy(AMTRAKER_ENDPOINTS, { cache: "no-store" });
+      const amtrakerTrains = parseAmtraker(amtrakerData, city);
+      if (amtrakerTrains.length) {
+        return {
+          trains: amtrakerTrains,
+          message: "Live train data loaded from Amtraker."
+        };
+      }
+    } catch (error) {
+      // Fall back to station-level data below.
+    }
+  }
+
+  const overpassData = await fetchJsonFromFirstHealthy(
+    OVERPASS_ENDPOINTS,
+    {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body: buildOverpassQuery(city),
+      cache: "no-store"
+    }
+  );
+  const overpassTrains = parseOverpass(overpassData, city);
   return {
-    trains,
-    message: trains.length
-      ? "Live data pulled directly from your browser via Amtraker public API."
-      : "No trains currently in this map window."
+    trains: overpassTrains,
+    message: overpassTrains.length
+      ? "Showing railway stations for this city from OpenStreetMap/Overpass."
+      : "No railway stations returned for this city yet."
   };
 }
 
+async function fetchFromProxy(city) {
+  const response = await fetch(`${API_PROXY_PATH}?city=${encodeURIComponent(city.id)}`, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Proxy unavailable (${response.status})`);
+  }
+  const result = await response.json();
+  return {
+    trains: Array.isArray(result?.trains) ? result.trains : [],
+    message: typeof result?.message === "string" ? result.message : "Data loaded."
+  };
+}
+
+async function fetchCityTrains(city) {
+  try {
+    return await fetchFromProxy(city);
+  } catch (proxyError) {
+    return {
+      ...(await fetchBrowserDirect(city)),
+      message: "Loaded in self-host mode without proxy."
+    };
+  }
+}
+
+function normalizeTrains(trains) {
+  return trains
+    .map((train) => ({
+      id: String(train.id ?? `${train.lat},${train.lon}`),
+      line: String(train.line || "Train"),
+      label: String(train.label || "Rail activity"),
+      status: String(train.status || "Live"),
+      lat: Number(train.lat),
+      lon: Number(train.lon)
+    }))
+    .filter((train) => Number.isFinite(train.lat) && Number.isFinite(train.lon));
+}
+
+function renderStatus(message, payloadTimestamp) {
+  statusEl.textContent = `${message} Last update: ${new Date(payloadTimestamp).toLocaleTimeString()}.`;
+}
+
+async function loadCity(cityId) {
+  const city = CITIES.find((entry) => entry.id === cityId) || CITIES[0];
+  currentCity = city;
+  map.setView(city.center, city.zoom);
+  panelTitle.textContent = `${city.name} Train Positions`;
+  statusEl.textContent = "Loading data…";
+
+  try {
+    const result = await fetchCityTrains(city);
+    const payload = { timestamp: new Date().toISOString(), trains: normalizeTrains(result.trains) };
+    pushHistory(city.id, payload);
+    refreshSnapshotSelector();
+    renderTrains(payload.trains);
+    renderStatus(result.message || "Data loaded.", payload.timestamp);
+  } catch (error) {
+    renderTrains([]);
+    statusEl.textContent = `Unable to load train data: ${error.message}`;
+    refreshSnapshotSelector();
+  }
+}
+
+citySelect.addEventListener("change", () => {
+  loadCity(citySelect.value);
+});
+
+snapshotSelect.addEventListener("change", () => {
+  if (snapshotSelect.value === "live") {
+    const latest = (historyByCity.get(currentCity.id) || [])[0];
+    renderTrains(latest ? latest.trains : []);
+    return;
+  }
+
+  const selected = (historyByCity.get(currentCity.id) || []).find(
+    (item) => item.timestamp === snapshotSelect.value
+  );
+  if (selected) {
+    renderTrains(selected.trains, selected.timestamp);
+    statusEl.textContent = `Viewing saved snapshot from ${new Date(selected.timestamp).toLocaleString()}.`;
+  }
+});
+
+refreshBtn.addEventListener("click", () => {
+  loadCity(currentCity.id);
+});
+
+setInterval(() => {
+  if (snapshotSelect.value === "live") {
+    loadCity(currentCity.id);
+  }
+}, 30000);
+
+loadCity("washington-dc");
 function renderTrains(trains, timestamp = null) {
   markerLayer.clearLayers();
   trainList.textContent = "";
@@ -175,56 +345,3 @@ function refreshSnapshotSelector() {
 
   snapshotSelect.value = "live";
 }
-
-async function loadCity(cityId) {
-  const city = CITIES.find((entry) => entry.id === cityId) || CITIES[0];
-  currentCity = city;
-  map.setView(city.center, city.zoom);
-  panelTitle.textContent = `${city.name} Train Positions`;
-  statusEl.textContent = "Loading data…";
-
-  try {
-    const result = await fetchCityTrains(city);
-    const payload = { timestamp: new Date().toISOString(), trains: result.trains };
-    pushHistory(city.id, payload);
-    refreshSnapshotSelector();
-    renderTrains(result.trains);
-    statusEl.textContent = `${result.message} Last update: ${new Date(payload.timestamp).toLocaleTimeString()}.`;
-  } catch (error) {
-    renderTrains([]);
-    statusEl.textContent = `Unable to load live train data: ${error.message}`;
-    refreshSnapshotSelector();
-  }
-}
-
-citySelect.addEventListener("change", () => {
-  loadCity(citySelect.value);
-});
-
-snapshotSelect.addEventListener("change", () => {
-  if (snapshotSelect.value === "live") {
-    const latest = (historyByCity.get(currentCity.id) || [])[0];
-    renderTrains(latest ? latest.trains : []);
-    return;
-  }
-
-  const selected = (historyByCity.get(currentCity.id) || []).find(
-    (item) => item.timestamp === snapshotSelect.value
-  );
-  if (selected) {
-    renderTrains(selected.trains, selected.timestamp);
-    statusEl.textContent = `Viewing saved snapshot from ${new Date(selected.timestamp).toLocaleString()}.`;
-  }
-});
-
-refreshBtn.addEventListener("click", () => {
-  loadCity(currentCity.id);
-});
-
-setInterval(() => {
-  if (snapshotSelect.value === "live") {
-    loadCity(currentCity.id);
-  }
-}, 30000);
-
-loadCity("washington-dc");
