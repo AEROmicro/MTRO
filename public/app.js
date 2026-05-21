@@ -79,7 +79,7 @@ const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
 
 const map = L.map("map", { zoomControl: true }).setView([38.9072, -77.0369], 10);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
   subdomains: "abcd",
   maxZoom: 20
