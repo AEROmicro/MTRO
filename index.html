@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MTRO</title>
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">MTRO</div>
+      <nav class="controls" aria-label="Train filter controls">
+        <label for="citySelect">City</label>
+        <select id="citySelect"></select>
+        <label for="snapshotSelect">Time</label>
+        <select id="snapshotSelect">
+          <option value="live">Live</option>
+        </select>
+        <button id="refreshBtn" type="button">Refresh</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section id="map" aria-label="Train map"></section>
+      <aside class="panel">
+        <h1 id="panelTitle">Live Train Positions</h1>
+        <p id="status" class="status">Loading data…</p>
+        <ul id="trainList" class="train-list"></ul>
+      </aside>
+    </main>
+
+    <script src="/vendor/leaflet/leaflet.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
