@@ -1,25 +1,21 @@
 {
   "name": "mtro",
-  "version": "1.0.0",
-  "description": "MTRO is a lightweight train-tracking web app with a modern black/white UI, city filtering, and OpenStreetMap mapping.",
-  "main": "app.js",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "python3 -m http.server 8080",
-    "test": "node --check app.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "npm run lint && node --check public/app.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AEROmicro/MTRO.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/AEROmicro/MTRO/issues"
-  },
-  "homepage": "https://github.com/AEROmicro/MTRO#readme",
   "dependencies": {
-    "leaflet": "^1.9.4"
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6"
   }
 }
