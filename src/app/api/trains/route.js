@@ -160,8 +160,8 @@ async function loadCityData(city) {
   };
 }
 
-export async function onRequestGet(context) {
-  const url = new URL(context.request.url);
+export async function GET(request) {
+  const url = new URL(request.url);
   const cityId = url.searchParams.get("city");
   const city = CITIES.find((entry) => entry.id === cityId) || CITIES[0];
 
@@ -175,3 +175,4 @@ export async function onRequestGet(context) {
     );
   }
 }
+export const runtime = "edge";
