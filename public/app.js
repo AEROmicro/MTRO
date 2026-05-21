@@ -58,6 +58,10 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter",
   "https://overpass.openstreetmap.fr/api/interpreter"
 ];
+const LIVE_REFRESH_INTERVAL_MS = 10000;
+const LIVE_ANIMATION_DURATION_MS = 9000;
+const liveMarkers = new Map();
+let activeAnimationFrame = null;
 
 for (const city of CITIES) {
   const option = document.createElement("option");
@@ -282,11 +286,19 @@ setInterval(() => {
   if (snapshotSelect.value === "live") {
     loadCity(currentCity.id);
   }
-}, 30000);
+}, LIVE_REFRESH_INTERVAL_MS);
 
 loadCity("washington-dc");
 function renderTrains(trains, timestamp = null) {
-  markerLayer.clearLayers();
+  renderTrainList(trains, timestamp);
+  if (timestamp) {
+    renderSnapshotTrains(trains);
+    return;
+  }
+  renderLiveTrains(trains);
+}
+
+function renderTrainList(trains, timestamp = null) {
   trainList.textContent = "";
 
   if (!trains.length) {
@@ -297,16 +309,6 @@ function renderTrains(trains, timestamp = null) {
   }
 
   for (const train of trains) {
-    const marker = L.circleMarker([train.lat, train.lon], {
-      radius: 6,
-      color: "#111",
-      fillColor: "#111",
-      fillOpacity: 0.9,
-      weight: 1
-    });
-    marker.bindPopup(`<strong>${escapeHtml(train.line)}</strong><br/>${escapeHtml(train.label)}<br/>${escapeHtml(train.status)}`);
-    marker.addTo(markerLayer);
-
     const item = document.createElement("li");
     const route = document.createElement("div");
     route.className = "train-route";
@@ -319,6 +321,102 @@ function renderTrains(trains, timestamp = null) {
     item.append(route, meta);
     trainList.append(item);
   }
+}
+
+function popupHtml(train) {
+  return `<strong>${escapeHtml(train.line)}</strong><br/>${escapeHtml(train.label)}<br/>${escapeHtml(train.status)}`;
+}
+
+function createTrainMarker(train) {
+  const marker = L.circleMarker([train.lat, train.lon], {
+    radius: 6,
+    color: "#111",
+    fillColor: "#111",
+    fillOpacity: 0.9,
+    weight: 1
+  });
+  marker.bindPopup(popupHtml(train));
+  marker.addTo(markerLayer);
+  return marker;
+}
+
+function clearLiveMarkers() {
+  if (activeAnimationFrame) {
+    cancelAnimationFrame(activeAnimationFrame);
+    activeAnimationFrame = null;
+  }
+  markerLayer.clearLayers();
+  liveMarkers.clear();
+}
+
+function renderSnapshotTrains(trains) {
+  clearLiveMarkers();
+  for (const train of trains) {
+    createTrainMarker(train);
+  }
+}
+
+function renderLiveTrains(trains) {
+  if (activeAnimationFrame) {
+    cancelAnimationFrame(activeAnimationFrame);
+    activeAnimationFrame = null;
+  }
+
+  const incomingIds = new Set(trains.map((train) => train.id));
+  for (const [id, entry] of liveMarkers) {
+    if (!incomingIds.has(id)) {
+      markerLayer.removeLayer(entry.marker);
+      liveMarkers.delete(id);
+    }
+  }
+
+  if (!trains.length) {
+    clearLiveMarkers();
+    return;
+  }
+
+  const transitions = [];
+  for (const train of trains) {
+    let entry = liveMarkers.get(train.id);
+    if (!entry) {
+      entry = {
+        marker: createTrainMarker(train),
+        lat: train.lat,
+        lon: train.lon
+      };
+      liveMarkers.set(train.id, entry);
+    } else {
+      entry.marker.setPopupContent(popupHtml(train));
+    }
+
+    transitions.push({
+      entry,
+      fromLat: entry.lat,
+      fromLon: entry.lon,
+      toLat: train.lat,
+      toLon: train.lon
+    });
+  }
+
+  const start = performance.now();
+  const step = (now) => {
+    const progress = Math.min((now - start) / LIVE_ANIMATION_DURATION_MS, 1);
+    for (const transition of transitions) {
+      const lat = transition.fromLat + (transition.toLat - transition.fromLat) * progress;
+      const lon = transition.fromLon + (transition.toLon - transition.fromLon) * progress;
+      transition.entry.lat = lat;
+      transition.entry.lon = lon;
+      transition.entry.marker.setLatLng([lat, lon]);
+    }
+
+    if (progress < 1) {
+      activeAnimationFrame = requestAnimationFrame(step);
+    } else {
+      activeAnimationFrame = null;
+    }
+  };
+
+  activeAnimationFrame = requestAnimationFrame(step);
 }
 
 function pushHistory(cityId, payload) {
