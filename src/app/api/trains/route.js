@@ -60,6 +60,7 @@ const RAIL_PRODUCTS = ["national", "nationalexp", "regional", "regionalexp", "su
 const RAIL_CATEGORY_PATTERN = /(rail|train|ice|ic|ec|re|rb|s\d|ir|tgv|rjx|ter|cfl)/i;
 const DEPARTURE_DURATION_MINUTES = 120;
 const MAX_DEPARTURE_RESULTS = 200;
+const MAX_BART_RESULTS = 250;
 
 const jsonHeaders = {
   "content-type": "application/json; charset=UTF-8",
@@ -160,7 +161,7 @@ function parseBartDepartures(etdData, city, stationMap) {
     }
   }
 
-  return trains.slice(0, 250);
+  return trains.slice(0, MAX_BART_RESULTS);
 }
 
 function toRailMode(value) {
@@ -174,6 +175,7 @@ function isRailDeparture(departure) {
   if (mode && !RAIL_MODES.includes(mode)) return false;
   if (product && RAIL_PRODUCTS.includes(product)) return true;
   if (category && RAIL_CATEGORY_PATTERN.test(category)) return true;
+  // Some transport.rest feeds omit mode/product for rail lines; keep those rows.
   return !product && !mode;
 }
 
