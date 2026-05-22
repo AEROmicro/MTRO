@@ -260,38 +260,6 @@ function dedupeTrains(rows) {
   return out;
 }
 
-function parseTflXml(text, city) {
-  const trains = [];
-  const tagMatches = text.matchAll(/<(T|S)\s+([^>]+?)\/?>(?:<\/\1>)?/g);
-
-  for (const match of tagMatches) {
-    const attrsText = match[2];
-    const attrs = {};
-    for (const attr of attrsText.matchAll(/(\w+)="([^"]*)"/g)) {
-      attrs[attr[1]] = attr[2];
-    }
-    const lat = Number(attrs.Lat ?? attrs.lat ?? attrs.Latitude);
-    const lon = Number(attrs.Lon ?? attrs.lon ?? attrs.Longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) continue;
-
-    trains.push({
-      id: String(attrs.VehicleId || attrs.I || attrs.N || `${lat},${lon}`),
-      line: "TfL Central",
-      label: String(attrs.N || attrs.VehicleId || "Train"),
-      status: String(attrs.S || attrs.Status || "Active"),
-      heading: toHeadingCardinal(Number(attrs.Heading)),
-      speed: null,
-      speedUnit: "mph",
-      state: String(attrs.D || attrs.Destination || "In service"),
-      type: "train",
-      lat,
-      lon
-    });
-  }
-
-  return trains;
-}
-
 async function fetchWithTimeout(url, init = {}, timeoutMs = 12000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -345,23 +313,6 @@ async function loadSourceData(city, source) {
   if (source.provider === "gtfsrt-protobuf") {
     const buffer = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
     return parseGtfsRealtime(buffer, city, source.fallbackLine || city.id);
-  }
-
-  if (source.provider === "tfl-xml") {
-    const text = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).text());
-    return parseTflXml(text, city);
-  }
-
-  if (source.provider === "nextbus-json" || source.provider === "marta-json" || source.provider === "digitraffic-json" || source.provider === "taiwan-json") {
-    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
-    const line = source.provider === "nextbus-json"
-      ? "TTC"
-      : source.provider === "marta-json"
-        ? "MARTA"
-        : source.provider === "digitraffic-json"
-          ? "Finland Rail"
-          : "THSR";
-    return parseGenericGeoJson(data, city, line);
   }
 
   throw new Error(`Unsupported provider: ${source.provider}`);
