@@ -86,6 +86,10 @@ const AMTRAKER_ENDPOINTS = [
 const LIVE_REFRESH_INTERVAL_MS = 30000;
 const LIVE_ANIMATION_DURATION_MS = 7000;
 const WEATHER_TTL_MS = 5 * 60 * 1000;
+const CELSIUS_TO_FAHRENHEIT_SCALE = 9 / 5;
+const CELSIUS_TO_FAHRENHEIT_OFFSET = 32;
+const OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast";
+const OPEN_METEO_CURRENT_FIELDS = "temperature_2m,weather_code,wind_speed_10m";
 const liveMarkers = new Map();
 let activeAnimationFrame = null;
 let weatherRequestToken = 0;
@@ -321,7 +325,7 @@ function weatherCodeLabel(code) {
 function formatTemperature(tempCelsius) {
   if (!Number.isFinite(tempCelsius)) return "N/A";
   if (temperatureUnit === "f") {
-    const tempF = (tempCelsius * 9) / 5 + 32;
+    const tempF = tempCelsius * CELSIUS_TO_FAHRENHEIT_SCALE + CELSIUS_TO_FAHRENHEIT_OFFSET;
     return `${tempF.toFixed(1)} °F`;
   }
   return `${tempCelsius.toFixed(1)} °C`;
@@ -354,7 +358,7 @@ async function loadWeather(city) {
 
   try {
     const [lat, lon] = city.center;
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=temperature_2m,weather_code,wind_speed_10m&timezone=${encodeURIComponent(city.timezone)}`;
+    const weatherUrl = `${OPEN_METEO_BASE_URL}?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=${encodeURIComponent(OPEN_METEO_CURRENT_FIELDS)}&timezone=${encodeURIComponent(city.timezone)}`;
     const response = await fetch(weatherUrl, { cache: "no-store" });
     if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
     const data = await response.json();
