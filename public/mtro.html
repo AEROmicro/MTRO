@@ -22,6 +22,9 @@
           </div>
         </div>
         <nav class="controls" aria-label="Train filter controls">
+          <label for="citySearch">Search</label>
+          <input id="citySearch" list="cityOptions" type="search" placeholder="Search city" autocomplete="off" />
+          <datalist id="cityOptions"></datalist>
           <label for="citySelect">City</label>
           <select id="citySelect"></select>
           <label for="snapshotSelect">Time</label>

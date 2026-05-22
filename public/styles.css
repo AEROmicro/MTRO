@@ -82,7 +82,8 @@ body {
 }
 
 .controls select,
-.controls button {
+.controls button,
+.controls input {
   border: 1px solid #3a3a3a;
   background: #101010;
   color: #fff;

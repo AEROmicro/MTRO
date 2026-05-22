@@ -58,6 +58,7 @@ const jsonHeaders = {
 };
 
 const CACHE_TTL_MS = 15000;
+const TRANSITOUS_ENDPOINTS = ["https://api.transitous.org/gtfs-rt/"];
 
 const cityCache = globalThis.__mtroCityCache || new Map();
 const inflightByCity = globalThis.__mtroInflightByCity || new Map();
@@ -226,6 +227,19 @@ function parseGtfsRealtime(buffer, city, fallbackLine) {
     .filter(Boolean);
 }
 
+
+function dedupeTrains(rows) {
+  const out = [];
+  const seen = new Set();
+  for (const row of rows) {
+    const key = `${row.id}|${row.line}|${row.label}|${row.lat.toFixed(5)}|${row.lon.toFixed(5)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
 function parseTflXml(text, city) {
   const trains = [];
   const tagMatches = text.matchAll(/<(T|S)\s+([^>]+?)\/?>(?:<\/\1>)?/g);
@@ -284,11 +298,38 @@ async function fetchFirst(urls, fetcher) {
 
 async function loadCityData(city) {
   if (city.provider === "amtraker") {
-    const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
-    const trains = parseAmtraker(data, city);
+    let amtrakerTrains = [];
+    let amtrakerError = null;
+    try {
+      const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
+      amtrakerTrains = parseAmtraker(data, city);
+    } catch (error) {
+      amtrakerError = error;
+    }
+
+    let transitousTrains = [];
+    try {
+      const buffer = await fetchFirst(TRANSITOUS_ENDPOINTS, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
+      transitousTrains = parseGtfsRealtime(buffer, city, "Transitous");
+    } catch {
+      transitousTrains = [];
+    }
+
+    const trains = dedupeTrains([...amtrakerTrains, ...transitousTrains]);
+    if (trains.length) {
+      return {
+        trains,
+        message: `Loaded ${trains.length} train positions from Amtrak and Transitous.`
+      };
+    }
+
+    if (amtrakerError) {
+      throw amtrakerError;
+    }
+
     return {
-      trains,
-      message: trains.length ? `Loaded ${trains.length} Amtrak train positions.` : "No Amtrak train positions found for this area."
+      trains: [],
+      message: "No train positions found for this area."
     };
   }
 

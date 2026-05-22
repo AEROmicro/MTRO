@@ -54,6 +54,8 @@ const CITIES = [
   { id: "london-central", name: "London Central", center: [51.5072, -0.1276], zoom: 10, bbox: [51.67, -0.56, 51.25, 0.28], provider: "tfl-xml", timezone: "Europe/London" }
 ];
 
+const citySearch = document.getElementById("citySearch");
+const cityOptions = document.getElementById("cityOptions");
 const citySelect = document.getElementById("citySelect");
 const snapshotSelect = document.getElementById("snapshotSelect");
 const refreshBtn = document.getElementById("refreshBtn");
@@ -97,8 +99,13 @@ for (const city of CITIES) {
   option.value = city.id;
   option.textContent = city.name;
   citySelect.append(option);
+
+  const autoOption = document.createElement("option");
+  autoOption.value = city.name;
+  cityOptions.append(autoOption);
 }
 citySelect.value = "washington-dc";
+citySearch.value = CITIES.find((city) => city.id === citySelect.value)?.name || "";
 
 function escapeHtml(text) {
   return String(text)
@@ -222,6 +229,25 @@ async function fetchCityTrains(city) {
       message: "Loaded in self-host mode without proxy."
     };
   }
+}
+
+
+function resolveCitySearch(input) {
+  const term = String(input || "").trim().toLowerCase();
+  if (!term) return null;
+
+  const exact = CITIES.find((city) => city.name.toLowerCase() === term || city.id.toLowerCase() === term);
+  if (exact) return exact;
+
+  return CITIES.find((city) => city.name.toLowerCase().startsWith(term) || city.id.toLowerCase().startsWith(term)) || null;
+}
+
+function applyCitySearch() {
+  const match = resolveCitySearch(citySearch.value);
+  if (!match) return;
+  citySelect.value = match.id;
+  citySearch.value = match.name;
+  loadCity(match.id);
 }
 
 function normalizeTrains(trains) {
@@ -353,6 +379,7 @@ async function loadWeather(city) {
 async function loadCity(cityId) {
   const city = CITIES.find((entry) => entry.id === cityId) || CITIES[0];
   currentCity = city;
+  citySearch.value = city.name;
   map.setView(city.center, city.zoom);
   panelTitle.textContent = `${city.name} Trains`;
   statusEl.textContent = "Loading…";
@@ -374,7 +401,17 @@ async function loadCity(cityId) {
 }
 
 citySelect.addEventListener("change", () => {
+  const selected = CITIES.find((city) => city.id === citySelect.value);
+  citySearch.value = selected?.name || "";
   loadCity(citySelect.value);
+});
+
+citySearch.addEventListener("change", applyCitySearch);
+citySearch.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    applyCitySearch();
+  }
 });
 
 snapshotSelect.addEventListener("change", () => {
