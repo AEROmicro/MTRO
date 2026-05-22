@@ -25,7 +25,8 @@ Requires Node.js 22+ (for `gtfs-realtime-bindings`).
 - The app uses a same-origin Next.js API route at `/api/trains`.
 - This route adds resilient fallback behavior for upstream train/station APIs and avoids browser CORS issues.
 - Server-side in-memory caching and in-flight de-duplication reduce repeated upstream fetches when many users request the same city at once.
-- You can deploy to Cloudflare with standard Next.js-on-Cloudflare workflows while keeping self-hosting support via `next start`.
+- `functions/api/trains.js` mirrors the same handler for Cloudflare Pages Functions, so `/api/trains` works with normal Cloudflare Pages deployments (without running `npm run dev` / `npm run start` on a server).
+- You can still deploy with standard Next.js-on-Cloudflare workflows and keep self-hosting support via `next start`.
 
 ## Features
 
