@@ -239,7 +239,7 @@ async function fetchCityTrains(city) {
     if (city.provider !== "amtraker") {
       return {
         trains: [],
-        message: "Live data for this location needs the server /api/trains route. Run this app with npm run dev or npm run start so the server API is available."
+        message: "Live data for this location needs the /api/trains route. Use npm run dev/start for self-hosting, or deploy with Cloudflare Pages Functions so /api/trains is available."
       };
     }
     const fallbackPrefix = "Loaded in self-host mode without proxy.";
