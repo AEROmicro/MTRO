@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { GET } from "../../src/app/api/trains/route.js";
 
 export async function onRequestGet(context) {
