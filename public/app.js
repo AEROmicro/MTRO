@@ -239,12 +239,14 @@ async function fetchCityTrains(city) {
     if (city.provider !== "amtraker") {
       return {
         trains: [],
-        message: "Live data for this location needs the server /api/trains route. Run MTRO with npm run dev/start or a Next.js deployment."
+        message: "Live data for this location needs the server /api/trains route. Run this app with npm run dev or npm run start so the server API is available."
       };
     }
+    const fallbackPrefix = "Loaded in self-host mode without proxy.";
+    const fallbackDetails = proxyError?.message ? ` Reason: ${proxyError.message}` : "";
     return {
       ...(await fetchBrowserDirect(city)),
-      message: `Loaded in self-host mode without proxy. ${proxyError?.message ? `(${proxyError.message})` : ""}`.trim()
+      message: `${fallbackPrefix}${fallbackDetails}`
     };
   }
 }
