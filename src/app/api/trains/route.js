@@ -28,14 +28,16 @@ const CITIES = [
   { id: "seattle",         bbox: [47.78, -122.55, 47.48, -122.20], provider: "amtraker" },
   { id: "portland-or",     bbox: [45.65, -122.88, 45.43, -122.50], provider: "amtraker" },
   { id: "sacramento",      bbox: [38.72, -121.65, 38.47, -121.37], provider: "amtraker" },
-  { id: "san-francisco",   bbox: [37.93, -122.56, 37.70, -122.30], provider: "amtraker" },
+  { id: "san-francisco",   bbox: [37.93, -122.56, 37.70, -122.30], provider: "bart" },
+  { id: "oakland",         bbox: [37.90, -122.38, 37.65, -122.10], provider: "bart" },
   { id: "los-angeles",     bbox: [34.22, -118.60, 33.88, -117.95], provider: "amtraker" },
   // ── Country-level rail departures (transport.rest) ─────────────────────────
+  { id: "finland",         bbox: [70.20, 19.00, 59.70, 31.90], provider: "transport-rest", stationQuery: "Helsinki" },
   { id: "switzerland",     bbox: [47.85, 5.95, 45.75, 10.55], provider: "transport-rest", stationQuery: "Zuerich HB" },
   { id: "luxembourg",      bbox: [50.20, 5.73, 49.42, 6.53],  provider: "transport-rest", stationQuery: "Luxembourg, Gare" },
   { id: "germany",         bbox: [55.10, 5.86, 47.20, 15.05], provider: "transport-rest", stationQuery: "Berlin Hbf" },
   { id: "austria",         bbox: [49.05, 9.50, 46.35, 17.20], provider: "transport-rest", stationQuery: "Wien Hbf" },
-  { id: "netherlands",     bbox: [53.70, 3.20, 50.70, 7.30],  provider: "transport-rest", stationQuery: "Amsterdam Centraal" },
+  { id: "netherlands",     bbox: [53.70, 3.20, 50.70, 7.30],  provider: "transport-rest", stationQuery: "Amsterdam Centraal" }
 ];
 
 const AMTRAKER_ENDPOINTS = [
@@ -43,15 +45,14 @@ const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v1/trains"
 ];
 
-const OVERPASS_ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.openstreetmap.fr/api/interpreter"
-];
 const TRANSPORT_REST_ENDPOINTS = [
   "https://v6.db.transport.rest",
   "https://v5.db.transport.rest"
 ];
+const BART_ENDPOINTS = [
+  "https://api.bart.gov/api"
+];
+const BART_API_KEY = "MW9S-E7SL-26DU-VV8V";
 
 const jsonHeaders = {
   "content-type": "application/json; charset=UTF-8",
@@ -91,39 +92,6 @@ function parseAmtraker(data, city) {
     .filter(Boolean);
 }
 
-function parseOverpass(data, city) {
-  const rows = Array.isArray(data?.elements) ? data.elements : [];
-  return rows
-    .map((row) => {
-      const lat = Number(row.lat);
-      const lon = Number(row.lon);
-      if (row.type !== "node" || !Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) {
-        return null;
-      }
-      const tags = row.tags || {};
-      const name = tags.name || tags.ref || "Rail stop";
-      return {
-        id: String(row.id ?? `${lat},${lon}`),
-        line: String(name),
-        label: String(tags.operator || tags.network || "Railway station"),
-        status: String(tags.railway || "station"),
-        heading: null,
-        speed: null,
-        state: "station",
-        type: "station",
-        lat,
-        lon
-      };
-    })
-    .filter(Boolean)
-    .slice(0, 250);
-}
-
-function buildOverpassQuery(city) {
-  const [north, west, south, east] = city.bbox;
-  return `[out:json][timeout:20];node["railway"~"station|halt|tram_stop|subway_entrance"](${south},${west},${north},${east});out body 300;`;
-}
-
 function parseStopLocation(stop) {
   if (!stop || typeof stop !== "object") return null;
   const location = stop.location || stop.station?.location || stop.stop?.location || {};
@@ -131,6 +99,60 @@ function parseStopLocation(stop) {
   const lon = Number(location.longitude ?? location.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
   return { lat, lon };
+}
+
+function mapBartStations(stationsData) {
+  const stations = Array.isArray(stationsData?.root?.stations?.station)
+    ? stationsData.root.stations.station
+    : [];
+  const stationMap = new Map();
+  for (const station of stations) {
+    const abbr = String(station?.abbr || "").trim();
+    const lat = Number(station?.gtfs_latitude ?? station?.latitude);
+    const lon = Number(station?.gtfs_longitude ?? station?.longitude);
+    if (!abbr || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    stationMap.set(abbr, { lat, lon });
+  }
+  return stationMap;
+}
+
+function parseBartDepartures(etdData, city, stationMap) {
+  const stations = Array.isArray(etdData?.root?.station) ? etdData.root.station : [];
+  const trains = [];
+
+  for (const station of stations) {
+    const stationAbbr = String(station?.abbr || "").trim();
+    const stationName = String(station?.name || stationAbbr || "BART");
+    const stationPoint = stationMap.get(stationAbbr);
+    const lat = Number(stationPoint?.lat);
+    const lon = Number(stationPoint?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) continue;
+
+    const departures = Array.isArray(station?.etd) ? station.etd : [];
+    for (const dep of departures) {
+      const destination = String(dep?.destination || "BART");
+      const estimates = Array.isArray(dep?.estimate) ? dep.estimate : [];
+      for (let i = 0; i < estimates.length; i += 1) {
+        const estimate = estimates[i] || {};
+        const minutes = String(estimate?.minutes || "Leaving");
+        const cars = estimate?.length ? `${estimate.length} cars` : "Active";
+        trains.push({
+          id: `${stationAbbr}-${destination}-${minutes}-${i}`,
+          line: `BART ${destination}`,
+          label: stationAbbr || stationName,
+          status: minutes === "Leaving" ? "Departing now" : `${minutes} min`,
+          heading: estimate?.direction || null,
+          speed: null,
+          state: cars,
+          type: "train",
+          lat,
+          lon
+        });
+      }
+    }
+  }
+
+  return trains.slice(0, 250);
 }
 
 function toRailMode(value) {
@@ -203,18 +225,34 @@ async function fetchFirst(urls, init) {
 
 async function loadCityData(city) {
   if (city.provider === "amtraker") {
-    try {
-      const amtrakerData = await fetchFirst(AMTRAKER_ENDPOINTS, { cache: "no-store" });
-      const trains = parseAmtraker(amtrakerData, city);
-      if (trains.length) {
-        return {
-          trains,
-          message: "Live train data from Amtraker."
-        };
-      }
-    } catch {
-      // Fall through to Overpass stations.
-    }
+    const amtrakerData = await fetchFirst(AMTRAKER_ENDPOINTS, { cache: "no-store" });
+    const trains = parseAmtraker(amtrakerData, city);
+    return {
+      trains,
+      message: trains.length
+        ? `Loaded ${trains.length} live Amtrak train${trains.length !== 1 ? "s" : ""}.`
+        : "No live Amtrak trains found in this area right now."
+    };
+  }
+
+  if (city.provider === "bart") {
+    const [etdData, stationsData] = await Promise.all([
+      fetchFirst(
+        BART_ENDPOINTS.map((base) => `${base}/etd.aspx?cmd=etd&orig=ALL&key=${encodeURIComponent(BART_API_KEY)}&json=y`),
+        { cache: "no-store" }
+      ),
+      fetchFirst(
+        BART_ENDPOINTS.map((base) => `${base}/stn.aspx?cmd=stns&key=${encodeURIComponent(BART_API_KEY)}&json=y`),
+        { cache: "no-store" }
+      )
+    ]);
+    const trains = parseBartDepartures(etdData, city, mapBartStations(stationsData));
+    return {
+      trains,
+      message: trains.length
+        ? `Loaded ${trains.length} BART departure estimate${trains.length !== 1 ? "s" : ""}.`
+        : "No BART departures returned for this area."
+    };
   }
 
   if (city.provider === "transport-rest") {
@@ -248,18 +286,9 @@ async function loadCityData(city) {
     };
   }
 
-  const overpassData = await fetchFirst(OVERPASS_ENDPOINTS, {
-    method: "POST",
-    headers: { "content-type": "text/plain;charset=UTF-8" },
-    body: buildOverpassQuery(city),
-    cache: "no-store"
-  });
-  const trains = parseOverpass(overpassData, city);
   return {
-    trains,
-    message: trains.length
-      ? "Railway stations loaded from OpenStreetMap/Overpass."
-      : "No railway stations returned for this city."
+    trains: [],
+    message: "No supported real-time train API is configured for this selection."
   };
 }
 
