@@ -37,16 +37,10 @@ Requires Node.js 22+ (for `gtfs-realtime-bindings`).
 - City weather summary with Celsius/Fahrenheit toggle persisted via cookie (`mtro_temp_unit`)
 - In-session past-data snapshots for quick playback
 - Shared server-side city response caching to reduce duplicate upstream requests
-- Expanded public feed coverage including:
-  - MBTA (Boston)
-  - BART GTFS-RT (San Francisco/Oakland)
+- City scope focused on Washington, DC; New York City; Boston; Philadelphia; and Bay Area
+- Multi-source API coverage for these cities including:
+  - MBTA vehicles API (Boston)
+  - BART GTFS-RT (Bay Area)
+  - SEPTA TrainView (Philadelphia)
   - Amtraker US network
-  - TriMet (Portland)
-  - TTC (Toronto)
-  - MARTA (Atlanta)
-  - Luxembourg, France, Paris region, Netherlands, Norway, Belgium, Switzerland GTFS-RT feeds
-  - Finland digitraffic rail JSON feed
-  - Sydney/NSW, Auckland, Santiago GTFS-RT feeds
-  - Taiwan THSR JSON feed
-  - Transitous global mirror
-  - TfL TrackerNet Central line endpoint
+  - Transitous GTFS-RT fallback

@@ -4,52 +4,71 @@ import gtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
 
-const CITIES = [
-  { id: "washington-dc", provider: "amtraker", bbox: [39.18, -77.50, 38.65, -76.73], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "new-york-city", provider: "amtraker", bbox: [41.05, -74.35, 40.45, -73.60], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "boston", provider: "mbta-json", bbox: [42.58, -71.35, 42.17, -70.85], endpoints: ["https://api-v3.mbta.com/vehicles"] },
-  { id: "philadelphia", provider: "amtraker", bbox: [40.08, -75.35, 39.83, -74.95], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "baltimore", provider: "amtraker", bbox: [39.38, -76.75, 39.20, -76.50], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "richmond-va", provider: "amtraker", bbox: [37.65, -77.60, 37.43, -77.30], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "charlotte", provider: "amtraker", bbox: [35.37, -80.98, 35.12, -80.68], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "atlanta", provider: "marta-json", bbox: [33.92, -84.65, 33.62, -84.18], endpoints: ["https://gtfs-rt.itsmarta.com/TMRI/metropositions"] },
-  { id: "miami", provider: "amtraker", bbox: [25.92, -80.42, 25.59, -80.00], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "orlando", provider: "amtraker", bbox: [28.68, -81.55, 28.40, -81.22], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "new-orleans", provider: "amtraker", bbox: [30.10, -90.30, 29.85, -89.87], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "chicago", provider: "amtraker", bbox: [42.10, -87.95, 41.62, -87.45], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "milwaukee", provider: "amtraker", bbox: [43.22, -88.10, 42.95, -87.77], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "minneapolis", provider: "amtraker", bbox: [45.08, -93.45, 44.86, -93.12], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "st-louis", provider: "amtraker", bbox: [38.78, -90.42, 38.50, -89.97], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "kansas-city", provider: "amtraker", bbox: [39.25, -94.78, 38.96, -94.38], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "detroit", provider: "amtraker", bbox: [42.45, -83.28, 42.20, -82.88], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "pittsburgh", provider: "amtraker", bbox: [40.58, -80.18, 40.32, -79.82], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "cleveland", provider: "amtraker", bbox: [41.62, -81.88, 41.38, -81.52], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "houston", provider: "amtraker", bbox: [29.92, -95.58, 29.60, -95.18], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "denver", provider: "amtraker", bbox: [39.88, -105.12, 39.59, -104.85], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "salt-lake-city", provider: "amtraker", bbox: [40.88, -112.03, 40.66, -111.76], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "albuquerque", provider: "amtraker", bbox: [35.22, -106.77, 34.98, -106.45], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "seattle", provider: "amtraker", bbox: [47.78, -122.55, 47.48, -122.20], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "portland-or", provider: "gtfsrt-protobuf", bbox: [45.65, -122.88, 45.43, -122.50], endpoints: ["https://developer.trimet.org/gtfs/realtime/vehiclePositions"] },
-  { id: "sacramento", provider: "amtraker", bbox: [38.72, -121.65, 38.47, -121.37], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "san-francisco", provider: "gtfsrt-protobuf", bbox: [37.93, -122.56, 37.70, -122.30], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
-  { id: "oakland", provider: "gtfsrt-protobuf", bbox: [37.90, -122.38, 37.65, -122.10], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
-  { id: "los-angeles", provider: "amtraker", bbox: [34.22, -118.60, 33.88, -117.95], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
+const AMTRAKER_ENDPOINTS = [
+  "https://api-v3.amtraker.com/v3/trains",
+  "https://api-v3.amtraker.com/v1/trains"
+];
+// Try canonical endpoint first, then common URL variants observed during upstream URL migrations.
+const TRANSITOUS_ENDPOINTS = [
+  "https://api.transitous.org/gtfs-rt/",
+  "https://api.transitous.org/gtfs-rt",
+  "https://transitous.org/gtfs-rt/"
+];
 
-  { id: "toronto", provider: "nextbus-json", bbox: [43.88, -79.67, 43.50, -79.10], endpoints: ["https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=ttc&t=0"] },
-  { id: "luxembourg", provider: "gtfsrt-protobuf", bbox: [50.20, 5.73, 49.42, 6.53], endpoints: ["https://data.public.lu/api/realtime/gtfs-rt/vehicle-positions"] },
-  { id: "france", provider: "gtfsrt-protobuf", bbox: [51.3, -5.4, 41.2, 9.8], endpoints: ["https://proxy.transport.data.gouv.fr/resource/sncf-tgv-idtgv-info-circulations"] },
-  { id: "paris-region", provider: "gtfsrt-protobuf", bbox: [49.4, 1.0, 48.1, 3.7], endpoints: ["https://proxy.transport.data.gouv.fr/resource/idfm-gtfs-rt-vehicle-positions"] },
-  { id: "netherlands", provider: "gtfsrt-protobuf", bbox: [53.7, 3.2, 50.7, 7.3], endpoints: ["https://gtfs.ovapi.nl/vehiclePositions.pb"] },
-  { id: "norway", provider: "gtfsrt-protobuf", bbox: [71.3, 4.5, 57.8, 31.3], endpoints: ["https://api.entur.io/realtime/v1/gtfs-rt/vehicle-positions"] },
-  { id: "finland", provider: "digitraffic-json", bbox: [70.2, 19.0, 59.7, 31.9], endpoints: ["https://rata.digitraffic.fi/api/v1/train-locations/latest/"] },
-  { id: "belgium", provider: "gtfsrt-protobuf", bbox: [51.6, 2.5, 49.4, 6.4], endpoints: ["https://gtfs.irail.be/nmbs/vehicle-positions.pb"] },
-  { id: "sydney", provider: "gtfsrt-protobuf", bbox: [-32.8, 150.5, -34.4, 152.2], endpoints: ["https://opendata.transport.nsw.gov.au/gtfs/vehiclepos/buses"] },
-  { id: "auckland", provider: "gtfsrt-protobuf", bbox: [-36.7, 174.4, -37.2, 175.2], endpoints: ["https://api.at.govt.nz/v2/public/realtime/vehiclepositions"] },
-  { id: "santiago", provider: "gtfsrt-protobuf", bbox: [-33.2, -70.9, -33.8, -70.4], endpoints: ["https://api.dtpm.cl/gtfs-rt/vehiclePositions.pb"] },
-  { id: "taiwan-hsr", provider: "taiwan-json", bbox: [25.5, 119.9, 21.8, 122.3], endpoints: ["https://tdx.transportdata.tw/api/basic/v2/Transit/RealTimeByFrequency/Train/THSR"] },
-  { id: "transitous-global", provider: "gtfsrt-protobuf", bbox: [85, -180, -85, 180], endpoints: ["https://api.transitous.org/gtfs-rt/"] },
-  { id: "switzerland", provider: "gtfsrt-protobuf", bbox: [47.85, 5.95, 45.75, 10.55], endpoints: ["https://gtfs.geops.ch/v1/gtfs-rt/vehicle-positions"] },
-  { id: "london-central", provider: "tfl-xml", bbox: [51.67, -0.56, 51.25, 0.28], endpoints: ["https://api.tfl.gov.uk/TrackerNet/PredictionSummary/Central"] }
+const CITIES = [
+  {
+    id: "washington-dc",
+    provider: "multi",
+    bbox: [39.18, -77.50, 38.65, -76.73],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "new-york-city",
+    provider: "multi",
+    bbox: [41.05, -74.35, 40.45, -73.60],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "boston",
+    provider: "multi",
+    bbox: [42.58, -71.35, 42.17, -70.85],
+    sources: [
+      { provider: "mbta-json", endpoints: ["https://api-v3.mbta.com/vehicles"], label: "MBTA" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "philadelphia",
+    provider: "multi",
+    bbox: [40.08, -75.35, 39.83, -74.95],
+    sources: [
+      { provider: "septa-json", endpoints: ["https://www3.septa.org/api/TrainView/index.php"], label: "SEPTA" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "bay-area",
+    provider: "multi",
+    bbox: [38.10, -122.75, 37.20, -121.60],
+    sources: [
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"],
+        fallbackLine: "BART",
+        label: "BART GTFS-RT"
+      },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  }
 ];
 
 const jsonHeaders = {
@@ -58,12 +77,6 @@ const jsonHeaders = {
 };
 
 const CACHE_TTL_MS = 15000;
-// Try canonical endpoint first, then common URL variants observed during upstream URL migrations.
-const TRANSITOUS_ENDPOINTS = [
-  "https://api.transitous.org/gtfs-rt/",
-  "https://api.transitous.org/gtfs-rt",
-  "https://transitous.org/gtfs-rt/"
-];
 const MS_TO_MPH_FACTOR = 2.23694;
 const MS_TO_KMH_FACTOR = 3.6;
 
@@ -311,144 +324,104 @@ async function fetchFirst(urls, fetcher) {
   throw lastError || new Error("No data source available");
 }
 
-async function loadTransitousFallback(city, fallbackLine = "Transitous") {
-  try {
-    const buffer = await fetchFirst(TRANSITOUS_ENDPOINTS, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
-    return parseGtfsRealtime(buffer, city, fallbackLine);
-  } catch (error) {
-    throw new Error(`Transitous fallback failed: ${error?.message || "unknown error"}`);
+async function loadSourceData(city, source) {
+  const endpoints = Array.isArray(source?.endpoints) ? source.endpoints : [];
+
+  if (source.provider === "amtraker") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
+    return parseAmtraker(data, city);
   }
+
+  if (source.provider === "mbta-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
+    return parseMbta(data, city);
+  }
+
+  if (source.provider === "septa-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
+    return parseGenericGeoJson(data, city, "SEPTA");
+  }
+
+  if (source.provider === "gtfsrt-protobuf") {
+    const buffer = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
+    return parseGtfsRealtime(buffer, city, source.fallbackLine || city.id);
+  }
+
+  if (source.provider === "tfl-xml") {
+    const text = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).text());
+    return parseTflXml(text, city);
+  }
+
+  if (source.provider === "nextbus-json" || source.provider === "marta-json" || source.provider === "digitraffic-json" || source.provider === "taiwan-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
+    const line = source.provider === "nextbus-json"
+      ? "TTC"
+      : source.provider === "marta-json"
+        ? "MARTA"
+        : source.provider === "digitraffic-json"
+          ? "Finland Rail"
+          : "THSR";
+    return parseGenericGeoJson(data, city, line);
+  }
+
+  throw new Error(`Unsupported provider: ${source.provider}`);
 }
 
 async function loadCityData(city) {
-  if (city.provider === "amtraker") {
-    let amtrakerTrains = [];
-    let amtrakerError = null;
-    try {
-      const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
-      amtrakerTrains = parseAmtraker(data, city);
-    } catch (error) {
-      amtrakerError = error;
-    }
+  const sources = Array.isArray(city.sources) && city.sources.length
+    ? city.sources
+    : [{ provider: city.provider, endpoints: city.endpoints, label: city.provider }];
 
-    let transitousTrains = [];
-    let transitousError = null;
-    try {
-      transitousTrains = await loadTransitousFallback(city);
-    } catch (error) {
-      transitousError = error;
-      transitousTrains = [];
-    }
+  const settled = await Promise.all(
+    sources.map(async (source) => {
+      try {
+        const trains = await loadSourceData(city, source);
+        return { ok: true, source, trains };
+      } catch (error) {
+        return { ok: false, source, error };
+      }
+    })
+  );
 
-    const trains = dedupeTrains([...amtrakerTrains, ...transitousTrains]);
-    if (trains.length) {
-      return {
-        trains,
-        message: `Loaded ${trains.length} train positions from Amtrak and Transitous.`
-      };
-    }
+  const trains = dedupeTrains(
+    settled
+      .filter((entry) => entry.ok)
+      .flatMap((entry) => entry.trains)
+  );
+  const successfulSources = settled
+    .filter((entry) => entry.ok && entry.trains.length)
+    .map((entry) => entry.source.label || entry.source.provider);
+  const failedCount = settled.filter((entry) => !entry.ok).length;
 
-    const bothFeedErrors = amtrakerError && transitousError;
-    const hasFeedError = amtrakerError || transitousError;
+  if (trains.length) {
+    const sourceLabel = successfulSources.length
+      ? successfulSources.join(", ")
+      : "available feeds";
+    const warning = failedCount ? " Some feeds are temporarily unavailable." : "";
+    return {
+      trains,
+      message: `Loaded ${trains.length} train positions from ${sourceLabel}.${warning}`
+    };
+  }
+
+  if (failedCount === sources.length) {
     return {
       trains: [],
-      message: bothFeedErrors
-        ? "Primary and fallback train feeds are temporarily unavailable for this area."
-        : hasFeedError
-          ? "Some train feeds are temporarily unavailable for this area."
-          : "No train positions found for this area."
+      message: "All configured train feeds are temporarily unavailable for this area."
     };
   }
 
-  if (city.provider === "mbta-json") {
-    const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
-    const trains = parseMbta(data, city);
+  if (failedCount > 0) {
     return {
-      trains,
-      message: trains.length ? `Loaded ${trains.length} MBTA vehicle positions.` : "No MBTA vehicle positions found for this area."
+      trains: [],
+      message: "Some train feeds are temporarily unavailable for this area."
     };
   }
 
-  if (city.provider === "nextbus-json") {
-    const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
-    const trains = parseGenericGeoJson(data, city, "TTC");
-    return {
-      trains,
-      message: trains.length ? `Loaded ${trains.length} TTC vehicle positions.` : "No TTC vehicle positions found for this area."
-    };
-  }
-
-  if (city.provider === "marta-json") {
-    const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
-    const trains = parseGenericGeoJson(data, city, "MARTA");
-    return {
-      trains,
-      message: trains.length ? `Loaded ${trains.length} MARTA vehicle positions.` : "No MARTA vehicle positions found for this area."
-    };
-  }
-
-  if (city.provider === "digitraffic-json") {
-    const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
-    const trains = parseGenericGeoJson(data, city, "Finland Rail");
-    return {
-      trains,
-      message: trains.length ? `Loaded ${trains.length} Finland rail positions.` : "No Finland rail positions found for this area."
-    };
-  }
-
-  if (city.provider === "taiwan-json") {
-    const data = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).json());
-    const trains = parseGenericGeoJson(data, city, "THSR");
-    return {
-      trains,
-      message: trains.length ? `Loaded ${trains.length} Taiwan rail positions.` : "No Taiwan rail positions found for this area."
-    };
-  }
-
-  if (city.provider === "tfl-xml") {
-    const text = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).text());
-    const trains = parseTflXml(text, city);
-    return {
-      trains,
-      message: trains.length ? `Loaded ${trains.length} TfL tracker positions.` : "TfL feed returned no usable coordinate positions for this area."
-    };
-  }
-
-  if (city.provider === "gtfsrt-protobuf") {
-    let trains = [];
-    let sourceLabel = "GTFS-RT";
-    let gtfsrtError = null;
-    let transitousError = null;
-    try {
-      const buffer = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
-      trains = parseGtfsRealtime(buffer, city, city.id);
-    } catch (error) {
-      gtfsrtError = error;
-      trains = [];
-    }
-    if (!trains.length) {
-      try {
-        trains = await loadTransitousFallback(city);
-        if (trains.length) sourceLabel = "Transitous GTFS-RT";
-      } catch (error) {
-        transitousError = error;
-      }
-    }
-    const bothFeedErrors = gtfsrtError && transitousError;
-    const hasFeedError = gtfsrtError || transitousError;
-    return {
-      trains,
-      message: trains.length
-        ? `Loaded ${trains.length} ${sourceLabel} vehicle positions.`
-        : bothFeedErrors
-          ? "Primary and fallback GTFS-RT feeds are temporarily unavailable for this area."
-          : hasFeedError
-            ? "Some GTFS-RT feeds are temporarily unavailable for this area."
-            : "No GTFS-RT vehicle positions found for this area."
-    };
-  }
-
-  return { trains: [], message: "No supported data source is configured for this selection." };
+  return {
+    trains: [],
+    message: "No train positions found for this area."
+  };
 }
 
 function getCached(cityId) {
