@@ -8,6 +8,8 @@ const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
   "https://api-v3.amtraker.com/v1/trains"
 ];
+const VRE_ENDPOINTS = ["https://www.vre.org/gtfs-rt/vehiclepositions"];
+const RTD_ENDPOINTS = ["https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb"];
 // Try canonical endpoint first, then common URL variants observed during upstream URL migrations.
 const TRANSITOUS_ENDPOINTS = [
   "https://api.transitous.org/gtfs-rt/",
@@ -21,6 +23,7 @@ const CITIES = [
     provider: "multi",
     bbox: [39.18, -77.50, 38.65, -76.73],
     sources: [
+      { provider: "gtfsrt-protobuf", endpoints: VRE_ENDPOINTS, fallbackLine: "VRE", label: "VRE GTFS-RT" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -67,6 +70,25 @@ const CITIES = [
       },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "denver",
+    provider: "multi",
+    bbox: [40.10, -105.30, 39.55, -104.70],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: RTD_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "chicago",
+    provider: "multi",
+    bbox: [42.15, -88.10, 41.60, -87.45],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Chicago Rail", label: "Transitous GTFS-RT" }
     ]
   }
 ];
