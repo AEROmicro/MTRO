@@ -4,12 +4,38 @@ import gtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
 
+const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
+const WMATA_API_KEY = process.env.WMATA_API_KEY;
+const MTA_API_KEY = process.env.MTA_API_KEY;
+
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
   "https://api-v3.amtraker.com/v1/trains"
 ];
+const BART_ENDPOINTS = [
+  `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  `https://api.bart.gov/gtfsrt/vehicles.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  "https://api.bart.gov/gtfsrt/vehiclepositions.aspx",
+  "https://api.bart.gov/gtfsrt/vehicles.pb"
+];
 const VRE_ENDPOINTS = ["https://www.vre.org/gtfs-rt/vehiclepositions"];
 const RTD_ENDPOINTS = ["https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb"];
+const WMATA_RAIL_ENDPOINTS = [
+  "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions.pb",
+  "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions"
+];
+const MTA_NYCT_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
+];
+const MTA_LIRR_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr%2Fgtfs-lirr",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr/gtfs-lirr"
+];
+const MTA_MNR_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr%2Fgtfs-mnr",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr/gtfs-mnr"
+];
 // Try canonical endpoint first, then common URL variants observed during upstream URL migrations.
 const TRANSITOUS_ENDPOINTS = [
   "https://api.transitous.org/gtfs-rt/",
@@ -24,6 +50,13 @@ const CITIES = [
     bbox: [39.18, -77.50, 38.65, -76.73],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: VRE_ENDPOINTS, fallbackLine: "VRE", label: "VRE GTFS-RT" },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: WMATA_RAIL_ENDPOINTS,
+        fallbackLine: "WMATA",
+        label: "WMATA Rail GTFS-RT",
+        headers: WMATA_API_KEY ? { api_key: WMATA_API_KEY } : undefined
+      },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -33,6 +66,27 @@ const CITIES = [
     provider: "multi",
     bbox: [41.05, -74.35, 40.45, -73.60],
     sources: [
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_NYCT_ENDPOINTS,
+        fallbackLine: "MTA Subway",
+        label: "MTA NYCT GTFS-RT",
+        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_LIRR_ENDPOINTS,
+        fallbackLine: "LIRR",
+        label: "MTA LIRR GTFS-RT",
+        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_MNR_ENDPOINTS,
+        fallbackLine: "Metro-North",
+        label: "MTA MNR GTFS-RT",
+        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+      },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -64,7 +118,7 @@ const CITIES = [
     sources: [
       {
         provider: "gtfsrt-protobuf",
-        endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"],
+        endpoints: BART_ENDPOINTS,
         fallbackLine: "BART",
         label: "BART GTFS-RT"
       },
@@ -316,24 +370,25 @@ async function fetchFirst(urls, fetcher) {
 
 async function loadSourceData(city, source) {
   const endpoints = Array.isArray(source?.endpoints) ? source.endpoints : [];
+  const requestInit = source?.headers ? { headers: source.headers } : {};
 
   if (source.provider === "amtraker") {
-    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseAmtraker(data, city);
   }
 
   if (source.provider === "mbta-json") {
-    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseMbta(data, city);
   }
 
   if (source.provider === "septa-json") {
-    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).json());
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseGenericGeoJson(data, city, "SEPTA");
   }
 
   if (source.provider === "gtfsrt-protobuf") {
-    const buffer = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
+    const buffer = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).arrayBuffer());
     return parseGtfsRealtime(buffer, city, source.fallbackLine || city.id);
   }
 
