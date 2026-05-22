@@ -21,7 +21,7 @@ const CITIES = [
     provider: "multi",
     bbox: [39.18, -77.50, 38.65, -76.73],
     sources: [
-      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
   },
@@ -30,7 +30,7 @@ const CITIES = [
     provider: "multi",
     bbox: [41.05, -74.35, 40.45, -73.60],
     sources: [
-      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
   },
@@ -40,7 +40,7 @@ const CITIES = [
     bbox: [42.58, -71.35, 42.17, -70.85],
     sources: [
       { provider: "mbta-json", endpoints: ["https://api-v3.mbta.com/vehicles"], label: "MBTA" },
-      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
   },
@@ -50,7 +50,7 @@ const CITIES = [
     bbox: [40.08, -75.35, 39.83, -74.95],
     sources: [
       { provider: "septa-json", endpoints: ["https://www3.septa.org/api/TrainView/index.php"], label: "SEPTA" },
-      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
   },
@@ -65,7 +65,7 @@ const CITIES = [
         fallbackLine: "BART",
         label: "BART GTFS-RT"
       },
-      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtraker" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
   }
@@ -319,9 +319,15 @@ async function loadSourceData(city, source) {
 }
 
 async function loadCityData(city) {
-  const sources = Array.isArray(city.sources) && city.sources.length
-    ? city.sources
-    : [{ provider: city.provider, endpoints: city.endpoints, label: city.provider }];
+  const sources = Array.isArray(city.sources)
+    ? city.sources.filter(Boolean)
+    : [];
+  if (!sources.length) {
+    return {
+      trains: [],
+      message: "No supported data source is configured for this selection."
+    };
+  }
 
   const settled = await Promise.all(
     sources.map(async (source) => {
