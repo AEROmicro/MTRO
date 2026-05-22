@@ -163,7 +163,7 @@ function parseAmtraker(data, city) {
         line: String(row.routeName || row.route_name || row.route || row.trainNum || row.train_num || "Amtrak"),
         label: String(row.trainNum || row.trainID || row.train_num || row.train_id || "Train"),
         status: row.velocity != null ? `${Math.round(Number(row.velocity))} mph` : "Active",
-        heading: row.heading || null,
+        heading: Number.isFinite(Number(row.heading)) ? Number(row.heading) : null,
         speed: row.velocity != null ? Math.round(Number(row.velocity)) : null,
         speedUnit: "mph",
         state: String(row.trainState || row.train_state || "Active"),
@@ -324,6 +324,10 @@ function weatherCodeLabel(code) {
 
 function formatTemperature(tempCelsius) {
   if (!Number.isFinite(tempCelsius)) return "N/A";
+  const cookieUnit = readCookie("mtro_temp_unit");
+  if (cookieUnit === "c" || cookieUnit === "f") {
+    temperatureUnit = cookieUnit;
+  }
   if (temperatureUnit === "f") {
     const tempF = tempCelsius * CELSIUS_TO_FAHRENHEIT_SCALE + CELSIUS_TO_FAHRENHEIT_OFFSET;
     return `${tempF.toFixed(1)} °F`;
@@ -358,7 +362,7 @@ async function loadWeather(city) {
 
   try {
     const [lat, lon] = city.center;
-    const weatherUrl = `${OPEN_METEO_BASE_URL}?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=${encodeURIComponent(OPEN_METEO_CURRENT_FIELDS)}&timezone=${encodeURIComponent(city.timezone)}`;
+    const weatherUrl = `${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&current=${encodeURIComponent(OPEN_METEO_CURRENT_FIELDS)}&timezone=${city.timezone}`;
     const response = await fetch(weatherUrl, { cache: "no-store" });
     if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
     const data = await response.json();
