@@ -33,8 +33,8 @@ const CITIES = [
   { id: "seattle", provider: "amtraker", bbox: [47.78, -122.55, 47.48, -122.20], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "portland-or", provider: "gtfsrt-protobuf", bbox: [45.65, -122.88, 45.43, -122.50], endpoints: ["https://developer.trimet.org/gtfs/realtime/vehiclePositions"] },
   { id: "sacramento", provider: "amtraker", bbox: [38.72, -121.65, 38.47, -121.37], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "san-francisco", provider: "gtfsrt-protobuf", bbox: [37.93, -122.56, 37.70, -122.30], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "http://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
-  { id: "oakland", provider: "gtfsrt-protobuf", bbox: [37.90, -122.38, 37.65, -122.10], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "http://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
+  { id: "san-francisco", provider: "gtfsrt-protobuf", bbox: [37.93, -122.56, 37.70, -122.30], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
+  { id: "oakland", provider: "gtfsrt-protobuf", bbox: [37.90, -122.38, 37.65, -122.10], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
   { id: "los-angeles", provider: "amtraker", bbox: [34.22, -118.60, 33.88, -117.95], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
 
   { id: "toronto", provider: "nextbus-json", bbox: [43.88, -79.67, 43.50, -79.10], endpoints: ["https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=ttc&t=0"] },
@@ -300,6 +300,11 @@ async function fetchFirst(urls, fetcher) {
   throw lastError || new Error("No data source available");
 }
 
+async function loadTransitousFallback(city, fallbackLine = "Transitous") {
+  const buffer = await fetchFirst(TRANSITOUS_ENDPOINTS, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
+  return parseGtfsRealtime(buffer, city, fallbackLine);
+}
+
 async function loadCityData(city) {
   if (city.provider === "amtraker") {
     let amtrakerTrains = [];
@@ -312,10 +317,11 @@ async function loadCityData(city) {
     }
 
     let transitousTrains = [];
+    let transitousError = null;
     try {
-      const buffer = await fetchFirst(TRANSITOUS_ENDPOINTS, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
-      transitousTrains = parseGtfsRealtime(buffer, city, "Transitous");
-    } catch {
+      transitousTrains = await loadTransitousFallback(city);
+    } catch (error) {
+      transitousError = error;
       transitousTrains = [];
     }
 
@@ -327,13 +333,11 @@ async function loadCityData(city) {
       };
     }
 
-    if (amtrakerError) {
-      throw amtrakerError;
-    }
-
     return {
       trains: [],
-      message: "No train positions found for this area."
+      message: amtrakerError || transitousError
+        ? "Primary train feeds are temporarily unavailable for this area."
+        : "No train positions found for this area."
     };
   }
 
@@ -392,11 +396,23 @@ async function loadCityData(city) {
   }
 
   if (city.provider === "gtfsrt-protobuf") {
-    const buffer = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
-    const trains = parseGtfsRealtime(buffer, city, city.id);
+    let trains = [];
+    let sourceLabel = "GTFS-RT";
+    try {
+      const buffer = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
+      trains = parseGtfsRealtime(buffer, city, city.id);
+    } catch {
+      trains = [];
+    }
+    if (!trains.length) {
+      try {
+        trains = await loadTransitousFallback(city);
+        if (trains.length) sourceLabel = "Transitous GTFS-RT";
+      } catch {}
+    }
     return {
       trains,
-      message: trains.length ? `Loaded ${trains.length} GTFS-RT vehicle positions.` : "No GTFS-RT vehicle positions found for this area."
+      message: trains.length ? `Loaded ${trains.length} ${sourceLabel} vehicle positions.` : "No GTFS-RT vehicle positions found for this area."
     };
   }
 
