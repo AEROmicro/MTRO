@@ -10,15 +10,27 @@
   <body>
     <header class="topbar">
       <div class="brand">MTRO</div>
-      <nav class="controls" aria-label="Train filter controls">
-        <label for="citySelect">City</label>
-        <select id="citySelect"></select>
-        <label for="snapshotSelect">Time</label>
-        <select id="snapshotSelect">
-          <option value="live">Live</option>
-        </select>
-        <button id="refreshBtn" type="button">Refresh</button>
-      </nav>
+      <div class="topbar-right">
+        <div class="time-weather" aria-live="polite">
+          <div class="timebar">
+            <span id="utcTime">UTC --:--:--</span>
+            <span id="localTime">Local --:--:--</span>
+          </div>
+          <div class="weatherbar">
+            <span id="weatherSummary">Weather unavailable</span>
+            <button id="tempUnitToggle" type="button">Show °C</button>
+          </div>
+        </div>
+        <nav class="controls" aria-label="Train filter controls">
+          <label for="citySelect">City</label>
+          <select id="citySelect"></select>
+          <label for="snapshotSelect">Time</label>
+          <select id="snapshotSelect">
+            <option value="live">Live</option>
+          </select>
+          <button id="refreshBtn" type="button">Refresh</button>
+        </nav>
+      </div>
     </header>
 
     <main class="layout">

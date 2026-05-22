@@ -1,52 +1,57 @@
-// Route color palette — bright on dark background (ADSB-style)
-const PALETTE = ["#f87171","#60a5fa","#4ade80","#fbbf24","#c084fc","#34d399","#fb923c","#f472b6","#22d3ee","#a3e635"];
+const PALETTE = ["#f87171", "#60a5fa", "#4ade80", "#fbbf24", "#c084fc", "#34d399", "#fb923c", "#f472b6", "#22d3ee", "#a3e635"];
 
-// Cardinal/intercardinal heading strings → clockwise degrees from north
 const HEADING_DEG = {
-  N:0,NNE:22.5,NE:45,ENE:67.5,E:90,ESE:112.5,SE:135,SSE:157.5,
-  S:180,SSW:202.5,SW:225,WSW:247.5,W:270,WNW:292.5,NW:315,NNW:337.5
+  N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
+  S: 180, SSW: 202.5, SW: 225, WSW: 247.5, W: 270, WNW: 292.5, NW: 315, NNW: 337.5
 };
 
 const CITIES = [
-  // ── United States (Amtrak live positions) ─────────────────────────────────
-  { id: "washington-dc",   name: "Washington, DC",    center: [38.9072, -77.0369],  zoom: 10, bbox: [39.18, -77.5,   38.65, -76.73],  provider: "amtraker" },
-  { id: "new-york-city",   name: "New York City",     center: [40.7128, -74.006],   zoom: 10, bbox: [41.05, -74.35,  40.45, -73.6],   provider: "amtraker" },
-  { id: "boston",          name: "Boston",            center: [42.3601, -71.0589],  zoom: 10, bbox: [42.58, -71.35,  42.17, -70.85],  provider: "amtraker" },
-  { id: "philadelphia",    name: "Philadelphia",      center: [39.9526, -75.1652],  zoom: 10, bbox: [40.08, -75.35,  39.83, -74.95],  provider: "amtraker" },
-  { id: "baltimore",       name: "Baltimore",         center: [39.2904, -76.6122],  zoom: 10, bbox: [39.38, -76.75,  39.20, -76.50],  provider: "amtraker" },
-  { id: "richmond-va",     name: "Richmond, VA",      center: [37.5407, -77.4360],  zoom: 10, bbox: [37.65, -77.60,  37.43, -77.30],  provider: "amtraker" },
-  { id: "charlotte",       name: "Charlotte, NC",     center: [35.2271, -80.8431],  zoom: 10, bbox: [35.37, -80.98,  35.12, -80.68],  provider: "amtraker" },
-  { id: "atlanta",         name: "Atlanta",           center: [33.7490, -84.3880],  zoom: 10, bbox: [33.92, -84.65,  33.62, -84.18],  provider: "amtraker" },
-  { id: "miami",           name: "Miami",             center: [25.7617, -80.1918],  zoom: 10, bbox: [25.92, -80.42,  25.59, -80.00],  provider: "amtraker" },
-  { id: "orlando",         name: "Orlando",           center: [28.5383, -81.3792],  zoom: 10, bbox: [28.68, -81.55,  28.40, -81.22],  provider: "amtraker" },
-  { id: "new-orleans",     name: "New Orleans",       center: [29.9511, -90.0715],  zoom: 10, bbox: [30.10, -90.30,  29.85, -89.87],  provider: "amtraker" },
-  { id: "chicago",         name: "Chicago",           center: [41.8781, -87.6298],  zoom: 10, bbox: [42.10, -87.95,  41.62, -87.45],  provider: "amtraker" },
-  { id: "milwaukee",       name: "Milwaukee",         center: [43.0389, -87.9065],  zoom: 10, bbox: [43.22, -88.10,  42.95, -87.77],  provider: "amtraker" },
-  { id: "minneapolis",     name: "Minneapolis",       center: [44.9778, -93.2650],  zoom: 10, bbox: [45.08, -93.45,  44.86, -93.12],  provider: "amtraker" },
-  { id: "st-louis",        name: "St. Louis",         center: [38.6270, -90.1994],  zoom: 10, bbox: [38.78, -90.42,  38.50, -89.97],  provider: "amtraker" },
-  { id: "kansas-city",     name: "Kansas City",       center: [39.0997, -94.5786],  zoom: 10, bbox: [39.25, -94.78,  38.96, -94.38],  provider: "amtraker" },
-  { id: "detroit",         name: "Detroit",           center: [42.3314, -83.0458],  zoom: 10, bbox: [42.45, -83.28,  42.20, -82.88],  provider: "amtraker" },
-  { id: "pittsburgh",      name: "Pittsburgh",        center: [40.4406, -79.9959],  zoom: 10, bbox: [40.58, -80.18,  40.32, -79.82],  provider: "amtraker" },
-  { id: "cleveland",       name: "Cleveland",         center: [41.4993, -81.6944],  zoom: 10, bbox: [41.62, -81.88,  41.38, -81.52],  provider: "amtraker" },
-  { id: "dallas",          name: "Dallas / Fort Worth",center: [32.7767, -96.7970], zoom: 10, bbox: [33.00, -97.05,  32.62, -96.58],  provider: "amtraker" },
-  { id: "houston",         name: "Houston",           center: [29.7604, -95.3698],  zoom: 10, bbox: [29.92, -95.58,  29.60, -95.18],  provider: "amtraker" },
-  { id: "san-antonio",     name: "San Antonio",       center: [29.4241, -98.4936],  zoom: 10, bbox: [29.58, -98.68,  29.28, -98.32],  provider: "amtraker" },
-  { id: "denver",          name: "Denver",            center: [39.7392, -104.9903], zoom: 10, bbox: [39.88, -105.12, 39.59, -104.85], provider: "amtraker" },
-  { id: "salt-lake-city",  name: "Salt Lake City",    center: [40.7608, -111.8910], zoom: 10, bbox: [40.88, -112.03, 40.66, -111.76], provider: "amtraker" },
-  { id: "albuquerque",     name: "Albuquerque",       center: [35.0853, -106.6056], zoom: 10, bbox: [35.22, -106.77, 34.98, -106.45], provider: "amtraker" },
-  { id: "seattle",         name: "Seattle",           center: [47.6062, -122.3321], zoom: 10, bbox: [47.78, -122.55, 47.48, -122.20], provider: "amtraker" },
-  { id: "portland-or",     name: "Portland, OR",      center: [45.5051, -122.6750], zoom: 10, bbox: [45.65, -122.88, 45.43, -122.50], provider: "amtraker" },
-  { id: "sacramento",      name: "Sacramento",        center: [38.5816, -121.4944], zoom: 10, bbox: [38.72, -121.65, 38.47, -121.37], provider: "amtraker" },
-  { id: "san-francisco",   name: "San Francisco",     center: [37.7749, -122.4194], zoom: 10, bbox: [37.93, -122.56, 37.70, -122.30], provider: "bart" },
-  { id: "oakland",         name: "Oakland",           center: [37.8044, -122.2712], zoom: 10, bbox: [37.90, -122.38, 37.65, -122.10], provider: "bart" },
-  { id: "los-angeles",     name: "Los Angeles",       center: [34.0522, -118.2437], zoom: 10, bbox: [34.22, -118.60, 33.88, -117.95], provider: "amtraker" },
-  // ── Country-level train departures (transport.rest) ───────────────────────
-  { id: "finland",         name: "Finland",           center: [61.9241, 25.7482],   zoom: 6,  bbox: [70.20, 19.00, 59.70, 31.90],      provider: "transport-rest" },
-  { id: "switzerland",     name: "Switzerland",       center: [46.8182,  8.2275],   zoom: 7,  bbox: [47.85, 5.95, 45.75, 10.55],       provider: "transport-rest" },
-  { id: "luxembourg",      name: "Luxembourg",        center: [49.8153,  6.1296],   zoom: 9,  bbox: [50.20, 5.73, 49.42, 6.53],        provider: "transport-rest" },
-  { id: "germany",         name: "Germany",           center: [51.1657, 10.4515],   zoom: 6,  bbox: [55.10, 5.86, 47.20, 15.05],       provider: "transport-rest" },
-  { id: "austria",         name: "Austria",           center: [47.5162, 14.5501],   zoom: 7,  bbox: [49.05, 9.50, 46.35, 17.20],       provider: "transport-rest" },
-  { id: "netherlands",     name: "Netherlands",       center: [52.1326,  5.2913],   zoom: 7,  bbox: [53.70, 3.20, 50.70, 7.30],        provider: "transport-rest" }
+  { id: "washington-dc", name: "Washington, DC", center: [38.9072, -77.0369], zoom: 10, bbox: [39.18, -77.5, 38.65, -76.73], provider: "amtraker", timezone: "America/New_York" },
+  { id: "new-york-city", name: "New York City", center: [40.7128, -74.0060], zoom: 10, bbox: [41.05, -74.35, 40.45, -73.6], provider: "amtraker", timezone: "America/New_York" },
+  { id: "boston", name: "Boston", center: [42.3601, -71.0589], zoom: 10, bbox: [42.58, -71.35, 42.17, -70.85], provider: "mbta-json", timezone: "America/New_York" },
+  { id: "philadelphia", name: "Philadelphia", center: [39.9526, -75.1652], zoom: 10, bbox: [40.08, -75.35, 39.83, -74.95], provider: "amtraker", timezone: "America/New_York" },
+  { id: "baltimore", name: "Baltimore", center: [39.2904, -76.6122], zoom: 10, bbox: [39.38, -76.75, 39.2, -76.5], provider: "amtraker", timezone: "America/New_York" },
+  { id: "richmond-va", name: "Richmond, VA", center: [37.5407, -77.4360], zoom: 10, bbox: [37.65, -77.6, 37.43, -77.3], provider: "amtraker", timezone: "America/New_York" },
+  { id: "charlotte", name: "Charlotte, NC", center: [35.2271, -80.8431], zoom: 10, bbox: [35.37, -80.98, 35.12, -80.68], provider: "amtraker", timezone: "America/New_York" },
+  { id: "atlanta", name: "Atlanta", center: [33.7490, -84.3880], zoom: 10, bbox: [33.92, -84.65, 33.62, -84.18], provider: "marta-json", timezone: "America/New_York" },
+  { id: "miami", name: "Miami", center: [25.7617, -80.1918], zoom: 10, bbox: [25.92, -80.42, 25.59, -80.0], provider: "amtraker", timezone: "America/New_York" },
+  { id: "orlando", name: "Orlando", center: [28.5383, -81.3792], zoom: 10, bbox: [28.68, -81.55, 28.4, -81.22], provider: "amtraker", timezone: "America/New_York" },
+  { id: "new-orleans", name: "New Orleans", center: [29.9511, -90.0715], zoom: 10, bbox: [30.1, -90.3, 29.85, -89.87], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "chicago", name: "Chicago", center: [41.8781, -87.6298], zoom: 10, bbox: [42.1, -87.95, 41.62, -87.45], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "milwaukee", name: "Milwaukee", center: [43.0389, -87.9065], zoom: 10, bbox: [43.22, -88.1, 42.95, -87.77], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "minneapolis", name: "Minneapolis", center: [44.9778, -93.2650], zoom: 10, bbox: [45.08, -93.45, 44.86, -93.12], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "st-louis", name: "St. Louis", center: [38.6270, -90.1994], zoom: 10, bbox: [38.78, -90.42, 38.5, -89.97], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "kansas-city", name: "Kansas City", center: [39.0997, -94.5786], zoom: 10, bbox: [39.25, -94.78, 38.96, -94.38], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "detroit", name: "Detroit", center: [42.3314, -83.0458], zoom: 10, bbox: [42.45, -83.28, 42.2, -82.88], provider: "amtraker", timezone: "America/New_York" },
+  { id: "pittsburgh", name: "Pittsburgh", center: [40.4406, -79.9959], zoom: 10, bbox: [40.58, -80.18, 40.32, -79.82], provider: "amtraker", timezone: "America/New_York" },
+  { id: "cleveland", name: "Cleveland", center: [41.4993, -81.6944], zoom: 10, bbox: [41.62, -81.88, 41.38, -81.52], provider: "amtraker", timezone: "America/New_York" },
+  { id: "dallas", name: "Dallas / Fort Worth", center: [32.7767, -96.7970], zoom: 10, bbox: [33.0, -97.05, 32.62, -96.58], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "houston", name: "Houston", center: [29.7604, -95.3698], zoom: 10, bbox: [29.92, -95.58, 29.6, -95.18], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "san-antonio", name: "San Antonio", center: [29.4241, -98.4936], zoom: 10, bbox: [29.58, -98.68, 29.28, -98.32], provider: "amtraker", timezone: "America/Chicago" },
+  { id: "denver", name: "Denver", center: [39.7392, -104.9903], zoom: 10, bbox: [39.88, -105.12, 39.59, -104.85], provider: "amtraker", timezone: "America/Denver" },
+  { id: "salt-lake-city", name: "Salt Lake City", center: [40.7608, -111.8910], zoom: 10, bbox: [40.88, -112.03, 40.66, -111.76], provider: "amtraker", timezone: "America/Denver" },
+  { id: "albuquerque", name: "Albuquerque", center: [35.0853, -106.6056], zoom: 10, bbox: [35.22, -106.77, 34.98, -106.45], provider: "amtraker", timezone: "America/Denver" },
+  { id: "seattle", name: "Seattle", center: [47.6062, -122.3321], zoom: 10, bbox: [47.78, -122.55, 47.48, -122.2], provider: "amtraker", timezone: "America/Los_Angeles" },
+  { id: "portland-or", name: "Portland, OR", center: [45.5051, -122.6750], zoom: 10, bbox: [45.65, -122.88, 45.43, -122.5], provider: "gtfsrt-protobuf", timezone: "America/Los_Angeles" },
+  { id: "sacramento", name: "Sacramento", center: [38.5816, -121.4944], zoom: 10, bbox: [38.72, -121.65, 38.47, -121.37], provider: "amtraker", timezone: "America/Los_Angeles" },
+  { id: "san-francisco", name: "San Francisco", center: [37.7749, -122.4194], zoom: 10, bbox: [37.93, -122.56, 37.7, -122.3], provider: "gtfsrt-protobuf", timezone: "America/Los_Angeles" },
+  { id: "oakland", name: "Oakland", center: [37.8044, -122.2712], zoom: 10, bbox: [37.9, -122.38, 37.65, -122.1], provider: "gtfsrt-protobuf", timezone: "America/Los_Angeles" },
+  { id: "los-angeles", name: "Los Angeles", center: [34.0522, -118.2437], zoom: 10, bbox: [34.22, -118.6, 33.88, -117.95], provider: "amtraker", timezone: "America/Los_Angeles" },
+  { id: "toronto", name: "Toronto", center: [43.6532, -79.3832], zoom: 10, bbox: [43.88, -79.67, 43.5, -79.1], provider: "nextbus-json", timezone: "America/Toronto" },
+  { id: "luxembourg", name: "Luxembourg", center: [49.6116, 6.1319], zoom: 9, bbox: [50.2, 5.73, 49.42, 6.53], provider: "gtfsrt-protobuf", timezone: "Europe/Luxembourg" },
+  { id: "france", name: "France (National Rail)", center: [46.2276, 2.2137], zoom: 6, bbox: [51.3, -5.4, 41.2, 9.8], provider: "gtfsrt-protobuf", timezone: "Europe/Paris" },
+  { id: "paris-region", name: "Paris Region", center: [48.8566, 2.3522], zoom: 9, bbox: [49.4, 1.0, 48.1, 3.7], provider: "gtfsrt-protobuf", timezone: "Europe/Paris" },
+  { id: "netherlands", name: "Netherlands", center: [52.1326, 5.2913], zoom: 7, bbox: [53.7, 3.2, 50.7, 7.3], provider: "gtfsrt-protobuf", timezone: "Europe/Amsterdam" },
+  { id: "norway", name: "Norway", center: [60.4720, 8.4689], zoom: 5, bbox: [71.3, 4.5, 57.8, 31.3], provider: "gtfsrt-protobuf", timezone: "Europe/Oslo" },
+  { id: "finland", name: "Finland", center: [61.9241, 25.7482], zoom: 6, bbox: [70.2, 19.0, 59.7, 31.9], provider: "digitraffic-json", timezone: "Europe/Helsinki" },
+  { id: "belgium", name: "Belgium", center: [50.5039, 4.4699], zoom: 7, bbox: [51.6, 2.5, 49.4, 6.4], provider: "gtfsrt-protobuf", timezone: "Europe/Brussels" },
+  { id: "sydney", name: "Sydney & NSW", center: [-33.8688, 151.2093], zoom: 8, bbox: [-32.8, 150.5, -34.4, 152.2], provider: "gtfsrt-protobuf", timezone: "Australia/Sydney" },
+  { id: "auckland", name: "Auckland", center: [-36.8509, 174.7645], zoom: 9, bbox: [-36.7, 174.4, -37.2, 175.2], provider: "gtfsrt-protobuf", timezone: "Pacific/Auckland" },
+  { id: "santiago", name: "Santiago", center: [-33.4489, -70.6693], zoom: 10, bbox: [-33.2, -70.9, -33.8, -70.4], provider: "gtfsrt-protobuf", timezone: "America/Santiago" },
+  { id: "taiwan-hsr", name: "Taiwan High-Speed Rail", center: [23.6978, 120.9605], zoom: 7, bbox: [25.5, 119.9, 21.8, 122.3], provider: "taiwan-json", timezone: "Asia/Taipei" },
+  { id: "transitous-global", name: "Transitous Global Mirror", center: [20, 0], zoom: 2, bbox: [85, -180, -85, 180], provider: "gtfsrt-protobuf", timezone: "UTC" },
+  { id: "switzerland", name: "Switzerland", center: [46.8182, 8.2275], zoom: 7, bbox: [47.85, 5.95, 45.75, 10.55], provider: "gtfsrt-protobuf", timezone: "Europe/Zurich" },
+  { id: "london-central", name: "London Central", center: [51.5072, -0.1276], zoom: 10, bbox: [51.67, -0.56, 51.25, 0.28], provider: "tfl-xml", timezone: "Europe/London" }
 ];
 
 const citySelect = document.getElementById("citySelect");
@@ -55,16 +60,21 @@ const refreshBtn = document.getElementById("refreshBtn");
 const statusEl = document.getElementById("status");
 const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
+const utcTimeEl = document.getElementById("utcTime");
+const localTimeEl = document.getElementById("localTime");
+const weatherEl = document.getElementById("weatherSummary");
+const tempUnitToggleBtn = document.getElementById("tempUnitToggle");
 
 const map = L.map("map", { zoomControl: true }).setView([38.9072, -77.0369], 10);
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 const markerLayer = L.layerGroup().addTo(map);
 const historyByCity = new Map();
+const weatherByCity = new Map();
 let currentCity = CITIES[0];
 const API_PROXY_PATH = "/api/trains";
 const AMTRAKER_ENDPOINTS = [
@@ -73,8 +83,14 @@ const AMTRAKER_ENDPOINTS = [
 ];
 const LIVE_REFRESH_INTERVAL_MS = 30000;
 const LIVE_ANIMATION_DURATION_MS = 7000;
+const WEATHER_TTL_MS = 5 * 60 * 1000;
 const liveMarkers = new Map();
 let activeAnimationFrame = null;
+let weatherRequestToken = 0;
+let temperatureUnit = readCookie("mtro_temp_unit");
+if (temperatureUnit !== "c" && temperatureUnit !== "f") {
+  temperatureUnit = "f";
+}
 
 for (const city of CITIES) {
   const option = document.createElement("option");
@@ -93,6 +109,21 @@ function escapeHtml(text) {
     .replaceAll("'", "&#039;");
 }
 
+function readCookie(name) {
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split(";")) {
+    const entry = part.trim();
+    if (entry.startsWith(prefix)) {
+      return decodeURIComponent(entry.slice(prefix.length));
+    }
+  }
+  return "";
+}
+
+function writeCookie(name, value, maxAgeSeconds) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+}
+
 function inBbox(lat, lon, bbox) {
   return lat <= bbox[0] && lon >= bbox[1] && lat >= bbox[2] && lon <= bbox[3];
 }
@@ -103,11 +134,12 @@ function getRouteColor(line) {
   return PALETTE[Math.abs(h) % PALETTE.length];
 }
 
-function headingToDeg(h) { return HEADING_DEG[h] ?? null; }
+function headingToDeg(h) {
+  if (typeof h === "number" && Number.isFinite(h)) return h;
+  return HEADING_DEG[h] ?? null;
+}
 
 function parseAmtraker(data, city) {
-  // Amtraker v3 returns { "trainNum": [trainObj, ...], ... } — must flatten.
-  // v1 may return a flat array. Handle both.
   const rows = Array.isArray(data) ? data : Object.values(data || {}).flat();
   return rows
     .map((row) => {
@@ -115,8 +147,6 @@ function parseAmtraker(data, city) {
       const lat = Number(row.lat ?? row.latitude);
       const lon = Number(row.lon ?? row.lng ?? row.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-
-      // Amtraker v3 uses camelCase; also accept legacy snake_case.
       return {
         id: String(row.trainID ?? row.train_id ?? row.id ?? `${lat},${lon}`),
         line: String(row.routeName || row.route_name || row.route || row.trainNum || row.train_num || "Amtrak"),
@@ -124,6 +154,7 @@ function parseAmtraker(data, city) {
         status: row.velocity != null ? `${Math.round(Number(row.velocity))} mph` : "Active",
         heading: row.heading || null,
         speed: row.velocity != null ? Math.round(Number(row.velocity)) : null,
+        speedUnit: "mph",
         state: String(row.trainState || row.train_state || "Active"),
         type: "train",
         lat,
@@ -185,7 +216,7 @@ async function fetchFromProxy(city) {
 async function fetchCityTrains(city) {
   try {
     return await fetchFromProxy(city);
-  } catch (proxyError) {
+  } catch {
     return {
       ...(await fetchBrowserDirect(city)),
       message: "Loaded in self-host mode without proxy."
@@ -202,6 +233,7 @@ function normalizeTrains(trains) {
       status: String(train.status || "Active"),
       heading: train.heading || null,
       speed: train.speed != null ? Number(train.speed) : null,
+      speedUnit: String(train.speedUnit || "mph"),
       state: String(train.state || "Active"),
       type: String(train.type || "train"),
       lat: Number(train.lat),
@@ -214,12 +246,118 @@ function renderStatus(message, payloadTimestamp) {
   statusEl.textContent = `${message} Last update: ${new Date(payloadTimestamp).toLocaleTimeString()}.`;
 }
 
+function getTimeZoneLabel(timezone, date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "short"
+  }).formatToParts(date);
+  const tzPart = parts.find((part) => part.type === "timeZoneName");
+  return tzPart?.value || timezone;
+}
+
+function updateTimeBar() {
+  const now = new Date();
+  const utc = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).format(now);
+  const local = new Intl.DateTimeFormat("en-GB", {
+    timeZone: currentCity.timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).format(now);
+  const tzLabel = getTimeZoneLabel(currentCity.timezone, now);
+
+  utcTimeEl.textContent = `UTC ${utc}`;
+  localTimeEl.textContent = `${currentCity.name} ${local} (${tzLabel})`;
+}
+
+function weatherCodeLabel(code) {
+  if (code === 0) return "Clear";
+  if ([1, 2, 3].includes(code)) return "Partly cloudy";
+  if ([45, 48].includes(code)) return "Fog";
+  if ([51, 53, 55, 56, 57].includes(code)) return "Drizzle";
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Rain";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
+  if ([95, 96, 99].includes(code)) return "Thunderstorm";
+  return "Weather";
+}
+
+function formatTemperature(tempCelsius) {
+  if (!Number.isFinite(tempCelsius)) return "N/A";
+  if (temperatureUnit === "f") {
+    const tempF = (tempCelsius * 9) / 5 + 32;
+    return `${tempF.toFixed(1)} °F`;
+  }
+  return `${tempCelsius.toFixed(1)} °C`;
+}
+
+function renderWeather(weatherData) {
+  if (!weatherData) {
+    weatherEl.textContent = "Weather unavailable";
+    return;
+  }
+  const label = weatherCodeLabel(weatherData.weatherCode);
+  const temp = formatTemperature(weatherData.tempCelsius);
+  const wind = Number.isFinite(weatherData.windKmh) ? ` · Wind ${Math.round(weatherData.windKmh)} km/h` : "";
+  weatherEl.textContent = `Weather: ${label} · ${temp}${wind}`;
+}
+
+function updateTempToggleLabel() {
+  tempUnitToggleBtn.textContent = temperatureUnit === "f" ? "Show °C" : "Show °F";
+}
+
+async function loadWeather(city) {
+  const cached = weatherByCity.get(city.id);
+  if (cached && Date.now() - cached.timestamp < WEATHER_TTL_MS) {
+    renderWeather(cached.data);
+    return;
+  }
+
+  const token = ++weatherRequestToken;
+  weatherEl.textContent = "Loading weather…";
+
+  try {
+    const [lat, lon] = city.center;
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=temperature_2m,weather_code,wind_speed_10m&timezone=${encodeURIComponent(city.timezone)}`;
+    const response = await fetch(weatherUrl, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
+    const data = await response.json();
+    const current = data?.current || {};
+    const weatherData = {
+      tempCelsius: Number(current.temperature_2m),
+      weatherCode: Number(current.weather_code),
+      windKmh: Number(current.wind_speed_10m)
+    };
+
+    weatherByCity.set(city.id, { timestamp: Date.now(), data: weatherData });
+    if (token === weatherRequestToken) {
+      renderWeather(weatherData);
+    }
+  } catch {
+    if (token === weatherRequestToken) {
+      weatherEl.textContent = "Weather unavailable";
+    }
+  }
+}
+
 async function loadCity(cityId) {
   const city = CITIES.find((entry) => entry.id === cityId) || CITIES[0];
   currentCity = city;
   map.setView(city.center, city.zoom);
   panelTitle.textContent = `${city.name} Trains`;
   statusEl.textContent = "Loading…";
+  updateTimeBar();
+  loadWeather(city);
 
   try {
     const result = await fetchCityTrains(city);
@@ -259,13 +397,26 @@ refreshBtn.addEventListener("click", () => {
   loadCity(currentCity.id);
 });
 
+tempUnitToggleBtn.addEventListener("click", () => {
+  temperatureUnit = temperatureUnit === "f" ? "c" : "f";
+  writeCookie("mtro_temp_unit", temperatureUnit, 60 * 60 * 24 * 365);
+  updateTempToggleLabel();
+  const cached = weatherByCity.get(currentCity.id);
+  renderWeather(cached?.data || null);
+});
+
 setInterval(() => {
   if (snapshotSelect.value === "live") {
     loadCity(currentCity.id);
   }
 }, LIVE_REFRESH_INTERVAL_MS);
 
+setInterval(updateTimeBar, 1000);
+
 loadCity("washington-dc");
+updateTempToggleLabel();
+updateTimeBar();
+
 function renderTrains(trains, timestamp = null) {
   renderTrainList(trains, timestamp);
   if (timestamp) {
@@ -288,7 +439,6 @@ function renderTrainList(trains, timestamp = null) {
     return;
   }
 
-  // Update panel title with live count
   if (activeTrains.length) {
     panelTitle.textContent = `${currentCity.name} Trains (${activeTrains.length} active)`;
   }
@@ -332,7 +482,7 @@ function popupHtml(train) {
     return `<div class="popup-station"><strong>${escapeHtml(train.line)}</strong><div class="popup-meta">${escapeHtml(train.label)}</div></div>`;
   }
   const color = escapeHtml(getRouteColor(train.line));
-  const speedStr = train.speed != null ? `${train.speed} mph` : train.status;
+  const speedStr = train.speed != null ? `${train.speed} ${escapeHtml(train.speedUnit)}` : train.status;
   const headingStr = train.heading ? ` · ${escapeHtml(train.heading)}` : "";
   const stateStr = train.state && train.state !== "Active" ? ` · ${escapeHtml(train.state)}` : "";
   return [
@@ -350,7 +500,7 @@ function tooltipHtml(train) {
     return `<strong>${escapeHtml(train.line)}</strong>`;
   }
   const parts = [`<strong>${escapeHtml(train.line)}</strong> #${escapeHtml(train.label)}`];
-  if (train.speed != null) parts.push(`${train.speed} mph`);
+  if (train.speed != null) parts.push(`${train.speed} ${escapeHtml(train.speedUnit)}`);
   if (train.heading) parts.push(escapeHtml(train.heading));
   return parts.join(" · ");
 }
@@ -369,7 +519,7 @@ function buildTrainIcon(train) {
   const deg = headingToDeg(train.heading);
   const rotation = deg ?? 0;
   const arrowSvg = deg !== null
-    ? `<polygon class="train-arrow" points="0,-11 -3.5,-5.5 3.5,-5.5"/>`
+    ? '<polygon class="train-arrow" points="0,-11 -3.5,-5.5 3.5,-5.5"/>'
     : "";
 
   const svg = `<svg class="train-svg" viewBox="-11 -11 22 22" xmlns="http://www.w3.org/2000/svg">${arrowSvg}<circle class="train-body" r="5.5"/></svg>`;
@@ -435,7 +585,6 @@ function renderLiveTrains(trains) {
       };
       liveMarkers.set(train.id, entry);
     } else {
-      // Refresh icon (heading may have changed) and popup/tooltip content
       entry.marker.setIcon(buildTrainIcon(train));
       entry.marker.setPopupContent(popupHtml(train));
       entry.marker.setTooltipContent(tooltipHtml(train));
