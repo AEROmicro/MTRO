@@ -213,7 +213,14 @@ async function fetchBrowserDirect(city) {
 }
 
 async function fetchFromProxy(city) {
-  const response = await fetch(`${API_PROXY_PATH}?city=${encodeURIComponent(city.id)}`, { cache: "no-store" });
+  let response;
+  try {
+    response = await fetch(`${API_PROXY_PATH}?city=${encodeURIComponent(city.id)}`, { cache: "no-store" });
+  } catch (error) {
+    const proxyError = new Error(`Proxy request failed: ${error?.message || "Network error"}`);
+    proxyError.kind = "proxy-network";
+    throw proxyError;
+  }
   let result = null;
   try {
     result = await response.json();
@@ -224,7 +231,10 @@ async function fetchFromProxy(city) {
     const message = typeof result?.message === "string" && result.message.trim()
       ? result.message.trim()
       : `Proxy unavailable (${response.status})`;
-    throw new Error(message);
+    const proxyError = new Error(message);
+    proxyError.kind = "proxy-http";
+    proxyError.status = response.status;
+    throw proxyError;
   }
   return {
     trains: Array.isArray(result?.trains) ? result.trains : [],
@@ -237,6 +247,13 @@ async function fetchCityTrains(city) {
     return await fetchFromProxy(city);
   } catch (proxyError) {
     if (city.provider !== "amtraker") {
+      const missingProxyRoute = proxyError?.status === 404 || proxyError?.status === 405;
+      if (!missingProxyRoute) {
+        return {
+          trains: [],
+          message: `Live data is temporarily unavailable from /api/trains. ${proxyError?.message || "Please try again shortly."}`
+        };
+      }
       return {
         trains: [],
         message: "Live data for this location needs the /api/trains route. Use npm run dev/start for self-hosting, or deploy with Cloudflare Pages Functions so /api/trains is available."
