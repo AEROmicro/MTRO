@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import gtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
