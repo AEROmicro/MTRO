@@ -59,6 +59,8 @@ const jsonHeaders = {
 
 const CACHE_TTL_MS = 15000;
 const TRANSITOUS_ENDPOINTS = ["https://api.transitous.org/gtfs-rt/"];
+const MS_TO_MPH_FACTOR = 2.23694;
+const MS_TO_KMH_FACTOR = 3.6;
 
 const cityCache = globalThis.__mtroCityCache || new Map();
 const inflightByCity = globalThis.__mtroInflightByCity || new Map();
@@ -117,7 +119,7 @@ function parseMbta(data, city) {
         label: String(attrs.label || attrs.vehicle_label || row?.id || "Vehicle"),
         status: String(attrs.current_status || "Active"),
         heading: toHeadingCardinal(Number(attrs.bearing)),
-        speed: Number.isFinite(Number(attrs.speed)) ? Math.round(Number(attrs.speed) * 2.23694) : null,
+        speed: Number.isFinite(Number(attrs.speed)) ? Math.round(Number(attrs.speed) * MS_TO_MPH_FACTOR) : null,
         speedUnit: "mph",
         state: String(attrs.occupancy_status || "In service"),
         type: "train",
@@ -165,7 +167,7 @@ function parseGenericGeoJson(data, city, defaultLine) {
       const lon = Number(row.lon ?? row.lng ?? row.longitude ?? row.Longitude ?? row.LONGITUDE ?? row.PositionLon);
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
       const speedMs = Number(row.speed ?? row.Speed ?? row.Velocity);
-      const mph = Number.isFinite(speedMs) ? Math.round(speedMs * 2.23694) : null;
+      const mph = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_MPH_FACTOR) : null;
       const line = row.routeTag || row.route || row.Route || row.route_id || row.line || row.Line || row.TrainTypeName || defaultLine;
       const label = row.id || row.vehicle?.id || row.VehicleID || row.vehicleNo || row.TrainNo || row.trainNumber || `${index + 1}`;
       return {
@@ -204,7 +206,7 @@ function parseGtfsRealtime(buffer, city, fallbackLine) {
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
 
       const speedMs = Number(position.speed);
-      const speedKmh = Number.isFinite(speedMs) ? Math.round(speedMs * 3.6) : null;
+      const speedKmh = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_KMH_FACTOR) : null;
       const routeId = vehicle?.trip?.routeId;
       const tripId = vehicle?.trip?.tripId;
       const vehicleId = vehicle?.vehicle?.id || vehicle?.vehicle?.label;

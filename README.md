@@ -18,6 +18,8 @@ For local development:
 npm run dev
 ```
 
+Requires Node.js 22+ (for `gtfs-realtime-bindings`).
+
 ## Cloudflare deployment
 
 - The app uses a same-origin Next.js API route at `/api/trains`.
