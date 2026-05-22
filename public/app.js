@@ -214,10 +214,18 @@ async function fetchBrowserDirect(city) {
 
 async function fetchFromProxy(city) {
   const response = await fetch(`${API_PROXY_PATH}?city=${encodeURIComponent(city.id)}`, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Proxy unavailable (${response.status})`);
+  let result = null;
+  try {
+    result = await response.json();
+  } catch {
+    result = null;
   }
-  const result = await response.json();
+  if (!response.ok) {
+    const message = typeof result?.message === "string" && result.message.trim()
+      ? result.message.trim()
+      : `Proxy unavailable (${response.status})`;
+    throw new Error(message);
+  }
   return {
     trains: Array.isArray(result?.trains) ? result.trains : [],
     message: typeof result?.message === "string" ? result.message : "Data loaded."
@@ -227,10 +235,16 @@ async function fetchFromProxy(city) {
 async function fetchCityTrains(city) {
   try {
     return await fetchFromProxy(city);
-  } catch {
+  } catch (proxyError) {
+    if (city.provider !== "amtraker") {
+      return {
+        trains: [],
+        message: "Live data for this location needs the server /api/trains route. Run MTRO with npm run dev/start or a Next.js deployment."
+      };
+    }
     return {
       ...(await fetchBrowserDirect(city)),
-      message: "Loaded in self-host mode without proxy."
+      message: `Loaded in self-host mode without proxy. ${proxyError?.message ? `(${proxyError.message})` : ""}`.trim()
     };
   }
 }
