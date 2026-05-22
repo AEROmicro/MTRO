@@ -52,7 +52,10 @@ const TRANSPORT_REST_ENDPOINTS = [
 const BART_ENDPOINTS = [
   "https://api.bart.gov/api"
 ];
-const BART_API_KEY = "MW9S-E7SL-26DU-VV8V";
+const DEFAULT_BART_API_KEY = "MW9S-E7SL-26DU-VV8V";
+const BART_API_KEY = process.env.BART_API_KEY || DEFAULT_BART_API_KEY;
+const RAIL_PRODUCTS = ["national", "nationalexp", "regional", "regionalexp", "suburban", "train", "subway", "tram"];
+const RAIL_CATEGORY_PATTERN = /(rail|train|ice|ic|ec|re|rb|s\d|ir|tgv|rjx|ter|cfl)/i;
 
 const jsonHeaders = {
   "content-type": "application/json; charset=UTF-8",
@@ -129,7 +132,8 @@ function parseBartDepartures(etdData, city, stationMap) {
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) continue;
 
     const departures = Array.isArray(station?.etd) ? station.etd : [];
-    for (const dep of departures) {
+    for (let depIndex = 0; depIndex < departures.length; depIndex += 1) {
+      const dep = departures[depIndex];
       const destination = String(dep?.destination || "BART");
       const estimates = Array.isArray(dep?.estimate) ? dep.estimate : [];
       for (let i = 0; i < estimates.length; i += 1) {
@@ -137,7 +141,7 @@ function parseBartDepartures(etdData, city, stationMap) {
         const minutes = String(estimate?.minutes || "Leaving");
         const cars = estimate?.length ? `${estimate.length} cars` : "Active";
         trains.push({
-          id: `${stationAbbr}-${destination}-${minutes}-${i}`,
+          id: `${stationAbbr}-${destination}-${depIndex}-${minutes}-${i}`,
           line: `BART ${destination}`,
           label: stationAbbr || stationName,
           status: minutes === "Leaving" ? "Departing now" : `${minutes} min`,
@@ -164,9 +168,8 @@ function isRailDeparture(departure) {
   const product = toRailMode(departure?.line?.product);
   const category = toRailMode(departure?.line?.productName || departure?.line?.name);
   if (mode && mode !== "train" && mode !== "subway" && mode !== "tram") return false;
-  const railProducts = ["national", "nationalexp", "regional", "regionalexp", "suburban", "train", "subway", "tram"];
-  if (product && railProducts.includes(product)) return true;
-  if (category && /(rail|train|ice|ic|ec|re|rb|s\d|ir|tgv|rjx|ter|cfl)/i.test(category)) return true;
+  if (product && RAIL_PRODUCTS.includes(product)) return true;
+  if (category && RAIL_CATEGORY_PATTERN.test(category)) return true;
   return !product && !mode;
 }
 
