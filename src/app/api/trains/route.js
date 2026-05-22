@@ -234,7 +234,7 @@ function dedupeTrains(rows) {
   const out = [];
   const seen = new Set();
   for (const row of rows) {
-    const key = `${row.id}|${row.line}|${row.label}|${row.lat.toFixed(5)}|${row.lon.toFixed(5)}`;
+    const key = `${row.id}|${row.line}|${row.label}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(row);
@@ -447,4 +447,5 @@ export async function GET(request) {
   }
 }
 
+// gtfs-realtime-bindings requires Node.js runtime support for protobuf decoding.
 export const runtime = "nodejs";
