@@ -30,36 +30,12 @@ const CITIES = [
   { id: "sacramento",      bbox: [38.72, -121.65, 38.47, -121.37], provider: "amtraker" },
   { id: "san-francisco",   bbox: [37.93, -122.56, 37.70, -122.30], provider: "amtraker" },
   { id: "los-angeles",     bbox: [34.22, -118.60, 33.88, -117.95], provider: "amtraker" },
-  // ── International (railway stations via OpenStreetMap) ───────────────────
-  { id: "london",          bbox: [51.66, -0.40,  51.38,   0.10],  provider: "none" },
-  { id: "paris",           bbox: [49.02,  2.12,  48.75,   2.57],  provider: "none" },
-  { id: "berlin",          bbox: [52.67, 13.10,  52.35,  13.70],  provider: "none" },
-  { id: "hamburg",         bbox: [53.70,  9.80,  53.45,  10.26],  provider: "none" },
-  { id: "munich",          bbox: [48.25, 11.42,  48.05,  11.72],  provider: "none" },
-  { id: "madrid",          bbox: [40.55, -3.90,  40.30,  -3.55],  provider: "none" },
-  { id: "barcelona",       bbox: [41.50,  1.98,  41.30,   2.32],  provider: "none" },
-  { id: "rome",            bbox: [42.05, 12.30,  41.77,  12.65],  provider: "none" },
-  { id: "milan",           bbox: [45.58,  8.98,  45.36,   9.34],  provider: "none" },
-  { id: "vienna",          bbox: [48.33, 16.18,  48.10,  16.56],  provider: "none" },
-  { id: "zurich",          bbox: [47.50,  8.40,  47.30,   8.68],  provider: "none" },
-  { id: "amsterdam",       bbox: [52.44,  4.73,  52.28,   5.05],  provider: "none" },
-  { id: "brussels",        bbox: [50.92,  4.20,  50.78,   4.50],  provider: "none" },
-  { id: "copenhagen",      bbox: [55.77, 12.45,  55.58,  12.74],  provider: "none" },
-  { id: "stockholm",       bbox: [59.42, 17.90,  59.24,  18.22],  provider: "none" },
-  { id: "oslo",            bbox: [60.00, 10.60,  59.82,  10.95],  provider: "none" },
-  { id: "helsinki",        bbox: [60.30, 24.80,  60.10,  25.13],  provider: "none" },
-  { id: "lisbon",          bbox: [38.82, -9.30,  38.65,  -9.02],  provider: "none" },
-  { id: "prague",          bbox: [50.18, 14.25,  49.96,  14.63],  provider: "none" },
-  { id: "budapest",        bbox: [47.60, 18.90,  47.40,  19.20],  provider: "none" },
-  { id: "warsaw",          bbox: [52.33, 20.85,  52.13,  21.20],  provider: "none" },
-  { id: "tokyo",           bbox: [35.90, 139.40, 35.50, 139.95],  provider: "none" },
-  { id: "seoul",           bbox: [37.70, 126.82, 37.46, 127.15],  provider: "none" },
-  { id: "hong-kong",       bbox: [22.56, 113.82, 22.15, 114.41],  provider: "none" },
-  { id: "singapore",       bbox: [ 1.47, 103.60,  1.23, 104.02],  provider: "none" },
-  { id: "sydney",          bbox: [-33.74, 150.95, -34.05, 151.35], provider: "none" },
-  { id: "toronto",         bbox: [43.85, -79.70,  43.55, -79.10],  provider: "none" },
-  { id: "vancouver",       bbox: [49.37, -123.32, 49.18, -122.95], provider: "none" },
-  { id: "mexico-city",     bbox: [19.57, -99.30,  19.32, -98.95],  provider: "none" },
+  // ── Country-level rail departures (transport.rest) ─────────────────────────
+  { id: "switzerland",     bbox: [47.85, 5.95, 45.75, 10.55], provider: "transport-rest", stationQuery: "Zuerich HB" },
+  { id: "luxembourg",      bbox: [50.20, 5.73, 49.42, 6.53],  provider: "transport-rest", stationQuery: "Luxembourg, Gare" },
+  { id: "germany",         bbox: [55.10, 5.86, 47.20, 15.05], provider: "transport-rest", stationQuery: "Berlin Hbf" },
+  { id: "austria",         bbox: [49.05, 9.50, 46.35, 17.20], provider: "transport-rest", stationQuery: "Wien Hbf" },
+  { id: "netherlands",     bbox: [53.70, 3.20, 50.70, 7.30],  provider: "transport-rest", stationQuery: "Amsterdam Centraal" },
 ];
 
 const AMTRAKER_ENDPOINTS = [
@@ -71,6 +47,10 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
   "https://overpass.openstreetmap.fr/api/interpreter"
+];
+const TRANSPORT_REST_ENDPOINTS = [
+  "https://v6.db.transport.rest",
+  "https://v5.db.transport.rest"
 ];
 
 const jsonHeaders = {
@@ -144,6 +124,57 @@ function buildOverpassQuery(city) {
   return `[out:json][timeout:20];node["railway"~"station|halt|tram_stop|subway_entrance"](${south},${west},${north},${east});out body 300;`;
 }
 
+function parseStopLocation(stop) {
+  if (!stop || typeof stop !== "object") return null;
+  const location = stop.location || stop.station?.location || stop.stop?.location || {};
+  const lat = Number(location.latitude ?? location.lat);
+  const lon = Number(location.longitude ?? location.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  return { lat, lon };
+}
+
+function toRailMode(value) {
+  return String(value || "").toLowerCase();
+}
+
+function isRailDeparture(departure) {
+  const mode = toRailMode(departure?.line?.mode);
+  const product = toRailMode(departure?.line?.product);
+  const category = toRailMode(departure?.line?.productName || departure?.line?.name);
+  if (mode && mode !== "train" && mode !== "subway" && mode !== "tram") return false;
+  const railProducts = ["national", "nationalexp", "regional", "regionalexp", "suburban", "train", "subway", "tram"];
+  if (product && railProducts.includes(product)) return true;
+  if (category && /(rail|train|ice|ic|ec|re|rb|s\d|ir|tgv|rjx|ter|cfl)/i.test(category)) return true;
+  return !product && !mode;
+}
+
+function parseTransportRestDepartures(data, city, fallbackLocation) {
+  const rows = Array.isArray(data?.departures) ? data.departures : (Array.isArray(data) ? data : []);
+  return rows
+    .filter(isRailDeparture)
+    .map((row, index) => {
+      const point = parseStopLocation(row.stop) || fallbackLocation;
+      if (!point || !inBbox(point.lat, point.lon, city.bbox)) return null;
+      const lineName = row?.line?.name || row?.line?.productName || row?.line?.fahrtNr || "Rail";
+      const depTime = row?.when || row?.plannedWhen || row?.prognosis?.when || row?.prognosis?.prognosedWhen;
+      const depLabel = depTime ? new Date(depTime).toISOString().slice(11, 16) : "Now";
+      return {
+        id: String(row.tripId || row.trip?.id || `${lineName}-${depTime || index}`),
+        line: String(lineName),
+        label: String(row?.line?.fahrtNr || row.tripId || depLabel),
+        status: depTime ? `Departure ${depLabel}` : "Departure",
+        heading: null,
+        speed: null,
+        state: row.cancelled ? "Cancelled" : "Scheduled",
+        type: "train",
+        lat: point.lat,
+        lon: point.lon
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 120);
+}
+
 async function fetchJsonWithTimeout(url, init, timeoutMs = 12000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -184,6 +215,37 @@ async function loadCityData(city) {
     } catch {
       // Fall through to Overpass stations.
     }
+  }
+
+  if (city.provider === "transport-rest") {
+    const query = city.stationQuery || city.id;
+    const stopLookupData = await fetchFirst(
+      TRANSPORT_REST_ENDPOINTS.map((base) => `${base}/stops?query=${encodeURIComponent(query)}&results=1`),
+      { cache: "no-store" }
+    );
+    const stopRows = Array.isArray(stopLookupData?.stops) ? stopLookupData.stops : (Array.isArray(stopLookupData) ? stopLookupData : []);
+    const stop = stopRows[0];
+    if (!stop) {
+      return { trains: [], message: "No railway stop found for this selection." };
+    }
+    const stopId = stop.id ?? stop.station?.id ?? stop.stop?.id;
+    const stopLocation = parseStopLocation(stop);
+    if (!stopId || !stopLocation) {
+      return { trains: [], message: "Rail stop data is incomplete for this selection." };
+    }
+    const departuresData = await fetchFirst(
+      TRANSPORT_REST_ENDPOINTS.map(
+        (base) => `${base}/stops/${encodeURIComponent(String(stopId))}/departures?duration=120&results=200&remarks=false&language=en`
+      ),
+      { cache: "no-store" }
+    );
+    const trains = parseTransportRestDepartures(departuresData, city, stopLocation);
+    return {
+      trains,
+      message: trains.length
+        ? `Loaded ${trains.length} train departures.`
+        : "No train departures returned for this selection."
+    };
   }
 
   const overpassData = await fetchFirst(OVERPASS_ENDPOINTS, {
