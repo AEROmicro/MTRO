@@ -18,21 +18,34 @@ For local development:
 npm run dev
 ```
 
+Requires Node.js 22+ (for `gtfs-realtime-bindings`).
+
 ## Cloudflare deployment
 
 - The app uses a same-origin Next.js API route at `/api/trains`.
 - This route adds resilient fallback behavior for upstream train/station APIs and avoids browser CORS issues.
+- Server-side in-memory caching and in-flight de-duplication reduce repeated upstream fetches when many users request the same city at once.
 - You can deploy to Cloudflare with standard Next.js-on-Cloudflare workflows while keeping self-hosting support via `next start`.
 
 ## Features
 
 - Defaults to **Washington, DC**
-- Sleek top-bar city filter and time snapshot filter
 - OpenStreetMap + live train markers
-- Same-origin API proxy at `/api/trains` for both cloud and self-host deployments
-- Uses no-key public feeds:
-  - Amtraker live train positions for supported US cities
-  - BART departure estimates for San Francisco Bay Area coverage
-  - transport.rest train departures for supported European country selections (including Finland, Switzerland, and Luxembourg)
-- Only includes locations with configured live/departure API support
+- Same-origin API proxy at `/api/trains`
+- UTC and selected-city local time bar with timezone abbreviation
+- City weather summary with Celsius/Fahrenheit toggle persisted via cookie (`mtro_temp_unit`)
 - In-session past-data snapshots for quick playback
+- Shared server-side city response caching to reduce duplicate upstream requests
+- Expanded public feed coverage including:
+  - MBTA (Boston)
+  - BART GTFS-RT (San Francisco/Oakland)
+  - Amtraker US network
+  - TriMet (Portland)
+  - TTC (Toronto)
+  - MARTA (Atlanta)
+  - Luxembourg, France, Paris region, Netherlands, Norway, Belgium, Switzerland GTFS-RT feeds
+  - Finland digitraffic rail JSON feed
+  - Sydney/NSW, Auckland, Santiago GTFS-RT feeds
+  - Taiwan THSR JSON feed
+  - Transitous global mirror
+  - TfL TrackerNet Central line endpoint
