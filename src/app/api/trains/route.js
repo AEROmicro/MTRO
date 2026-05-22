@@ -1,5 +1,5 @@
-// gtfs-realtime-bindings requires Node.js runtime support for protobuf decoding.
-export const runtime = "nodejs";
+// Cloudflare Pages requires non-static Next.js routes to run on the Edge runtime.
+export const runtime = "edge";
 import gtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
