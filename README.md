@@ -30,8 +30,9 @@ npm run dev
 - Sleek top-bar city filter and time snapshot filter
 - OpenStreetMap + live train markers
 - Same-origin API proxy at `/api/trains` for both cloud and self-host deployments
-- Uses no-key public feeds with fallback logic:
+- Uses no-key public feeds:
   - Amtraker live train positions for supported US cities
-  - OpenStreetMap/Overpass railway-station fallback for all configured cities
-- Includes 30+ city options including Tokyo, NYC, Paris, Chicago, Boston, and Zurich, all with API-backed map data
+  - BART departure estimates for San Francisco Bay Area coverage
+  - transport.rest train departures for supported European country selections (including Finland, Switzerland, and Luxembourg)
+- Only includes locations with configured live/departure API support
 - In-session past-data snapshots for quick playback
