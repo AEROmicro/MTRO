@@ -1,4 +1,5 @@
-export const runtime = 'edge';
+// gtfs-realtime-bindings requires Node.js runtime support for protobuf decoding.
+export const runtime = "nodejs";
 import gtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
@@ -447,6 +448,3 @@ export async function GET(request) {
     );
   }
 }
-
-// gtfs-realtime-bindings requires Node.js runtime support for protobuf decoding.
-export const runtime = "nodejs";
