@@ -6,11 +6,11 @@ const HEADING_DEG = {
 };
 
 const CITIES = [
-  { id: "washington-dc", name: "Washington, DC", center: [38.9072, -77.0369], zoom: 10, bbox: [39.18, -77.5, 38.65, -76.73], provider: "amtraker", timezone: "America/New_York" },
-  { id: "new-york-city", name: "New York City", center: [40.7128, -74.0060], zoom: 10, bbox: [41.05, -74.35, 40.45, -73.6], provider: "amtraker", timezone: "America/New_York" },
-  { id: "boston", name: "Boston", center: [42.3601, -71.0589], zoom: 10, bbox: [42.58, -71.35, 42.17, -70.85], provider: "mbta-json", timezone: "America/New_York" },
-  { id: "philadelphia", name: "Philadelphia", center: [39.9526, -75.1652], zoom: 10, bbox: [40.08, -75.35, 39.83, -74.95], provider: "amtraker", timezone: "America/New_York" },
-  { id: "bay-area", name: "Bay Area", center: [37.8044, -122.2712], zoom: 10, bbox: [38.10, -122.75, 37.20, -121.60], provider: "gtfsrt-protobuf", timezone: "America/Los_Angeles" }
+  { id: "washington-dc", name: "Washington, DC", center: [38.9072, -77.0369], zoom: 10, bbox: [39.18, -77.5, 38.65, -76.73], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
+  { id: "new-york-city", name: "New York City", center: [40.7128, -74.0060], zoom: 10, bbox: [41.05, -74.35, 40.45, -73.6], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
+  { id: "boston", name: "Boston", center: [42.3601, -71.0589], zoom: 10, bbox: [42.58, -71.35, 42.17, -70.85], provider: "multi", timezone: "America/New_York" },
+  { id: "philadelphia", name: "Philadelphia", center: [39.9526, -75.1652], zoom: 10, bbox: [40.08, -75.35, 39.83, -74.95], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
+  { id: "bay-area", name: "Bay Area", center: [37.8044, -122.2712], zoom: 10, bbox: [38.10, -122.75, 37.20, -121.60], provider: "multi", timezone: "America/Los_Angeles" }
 ];
 
 const citySearch = document.getElementById("citySearch");
@@ -164,7 +164,8 @@ async function fetchJsonFromFirstHealthy(urls, init, timeoutMs = 12000) {
 }
 
 async function fetchBrowserDirect(city) {
-  if (city.provider === "amtraker") {
+  const fallbackProvider = city.directFallbackProvider || city.provider;
+  if (fallbackProvider === "amtraker") {
     const amtrakerData = await fetchJsonFromFirstHealthy(AMTRAKER_ENDPOINTS, { cache: "no-store" });
     const amtrakerTrains = parseAmtraker(amtrakerData, city);
     return {
@@ -212,7 +213,8 @@ async function fetchCityTrains(city) {
   try {
     return await fetchFromProxy(city);
   } catch (proxyError) {
-    if (city.provider !== "amtraker") {
+    const fallbackProvider = city.directFallbackProvider || city.provider;
+    if (fallbackProvider !== "amtraker") {
       const missingProxyRoute = proxyError?.status === 404 || proxyError?.status === 405;
       if (!missingProxyRoute) {
         return {
