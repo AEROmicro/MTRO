@@ -37,38 +37,16 @@ const CITIES = [
   { id: "seattle",         name: "Seattle",           center: [47.6062, -122.3321], zoom: 10, bbox: [47.78, -122.55, 47.48, -122.20], provider: "amtraker" },
   { id: "portland-or",     name: "Portland, OR",      center: [45.5051, -122.6750], zoom: 10, bbox: [45.65, -122.88, 45.43, -122.50], provider: "amtraker" },
   { id: "sacramento",      name: "Sacramento",        center: [38.5816, -121.4944], zoom: 10, bbox: [38.72, -121.65, 38.47, -121.37], provider: "amtraker" },
-  { id: "san-francisco",   name: "San Francisco",     center: [37.7749, -122.4194], zoom: 10, bbox: [37.93, -122.56, 37.70, -122.30], provider: "amtraker" },
+  { id: "san-francisco",   name: "San Francisco",     center: [37.7749, -122.4194], zoom: 10, bbox: [37.93, -122.56, 37.70, -122.30], provider: "bart" },
+  { id: "oakland",         name: "Oakland",           center: [37.8044, -122.2712], zoom: 10, bbox: [37.90, -122.38, 37.65, -122.10], provider: "bart" },
   { id: "los-angeles",     name: "Los Angeles",       center: [34.0522, -118.2437], zoom: 10, bbox: [34.22, -118.60, 33.88, -117.95], provider: "amtraker" },
-  // ── International (railway stations via OpenStreetMap) ───────────────────
-  { id: "london",          name: "London",            center: [51.5072,  -0.1276],  zoom: 10, bbox: [51.66, -0.40,  51.38,   0.10],  provider: "none" },
-  { id: "paris",           name: "Paris",             center: [48.8566,   2.3522],  zoom: 10, bbox: [49.02,  2.12,  48.75,   2.57],  provider: "none" },
-  { id: "berlin",          name: "Berlin",            center: [52.5200,  13.4050],  zoom: 10, bbox: [52.67, 13.10,  52.35,  13.70],  provider: "none" },
-  { id: "hamburg",         name: "Hamburg",           center: [53.5753,  10.0153],  zoom: 10, bbox: [53.70,  9.80,  53.45,  10.26],  provider: "none" },
-  { id: "munich",          name: "Munich",            center: [48.1351,  11.5820],  zoom: 10, bbox: [48.25, 11.42,  48.05,  11.72],  provider: "none" },
-  { id: "madrid",          name: "Madrid",            center: [40.4168,  -3.7038],  zoom: 10, bbox: [40.55, -3.90,  40.30,  -3.55],  provider: "none" },
-  { id: "barcelona",       name: "Barcelona",         center: [41.3851,   2.1734],  zoom: 10, bbox: [41.50,  1.98,  41.30,   2.32],  provider: "none" },
-  { id: "rome",            name: "Rome",              center: [41.9028,  12.4964],  zoom: 10, bbox: [42.05, 12.30,  41.77,  12.65],  provider: "none" },
-  { id: "milan",           name: "Milan",             center: [45.4642,   9.1900],  zoom: 10, bbox: [45.58,  8.98,  45.36,   9.34],  provider: "none" },
-  { id: "vienna",          name: "Vienna",            center: [48.2082,  16.3738],  zoom: 10, bbox: [48.33, 16.18,  48.10,  16.56],  provider: "none" },
-  { id: "zurich",          name: "Zurich",            center: [47.3769,   8.5417],  zoom: 10, bbox: [47.50,  8.40,  47.30,   8.68],  provider: "none" },
-  { id: "amsterdam",       name: "Amsterdam",         center: [52.3676,   4.9041],  zoom: 10, bbox: [52.44,  4.73,  52.28,   5.05],  provider: "none" },
-  { id: "brussels",        name: "Brussels",          center: [50.8503,   4.3517],  zoom: 10, bbox: [50.92,  4.20,  50.78,   4.50],  provider: "none" },
-  { id: "copenhagen",      name: "Copenhagen",        center: [55.6761,  12.5683],  zoom: 10, bbox: [55.77, 12.45,  55.58,  12.74],  provider: "none" },
-  { id: "stockholm",       name: "Stockholm",         center: [59.3293,  18.0686],  zoom: 10, bbox: [59.42, 17.90,  59.24,  18.22],  provider: "none" },
-  { id: "oslo",            name: "Oslo",              center: [59.9139,  10.7522],  zoom: 10, bbox: [60.00, 10.60,  59.82,  10.95],  provider: "none" },
-  { id: "helsinki",        name: "Helsinki",          center: [60.1699,  24.9384],  zoom: 10, bbox: [60.30, 24.80,  60.10,  25.13],  provider: "none" },
-  { id: "lisbon",          name: "Lisbon",            center: [38.7223,  -9.1393],  zoom: 10, bbox: [38.82, -9.30,  38.65,  -9.02],  provider: "none" },
-  { id: "prague",          name: "Prague",            center: [50.0755,  14.4378],  zoom: 10, bbox: [50.18, 14.25,  49.96,  14.63],  provider: "none" },
-  { id: "budapest",        name: "Budapest",          center: [47.4979,  19.0402],  zoom: 10, bbox: [47.60, 18.90,  47.40,  19.20],  provider: "none" },
-  { id: "warsaw",          name: "Warsaw",            center: [52.2297,  21.0122],  zoom: 10, bbox: [52.33, 20.85,  52.13,  21.20],  provider: "none" },
-  { id: "tokyo",           name: "Tokyo",             center: [35.6762, 139.6503],  zoom: 10, bbox: [35.90, 139.40, 35.50, 139.95],  provider: "none" },
-  { id: "seoul",           name: "Seoul",             center: [37.5665, 126.9780],  zoom: 10, bbox: [37.70, 126.82, 37.46, 127.15],  provider: "none" },
-  { id: "hong-kong",       name: "Hong Kong",         center: [22.3193, 114.1694],  zoom: 11, bbox: [22.56, 113.82, 22.15, 114.41],  provider: "none" },
-  { id: "singapore",       name: "Singapore",         center: [ 1.3521, 103.8198],  zoom: 11, bbox: [ 1.47, 103.60,  1.23, 104.02],  provider: "none" },
-  { id: "sydney",          name: "Sydney",            center: [-33.8688, 151.2093], zoom: 10, bbox: [-33.74, 150.95, -34.05, 151.35], provider: "none" },
-  { id: "toronto",         name: "Toronto",           center: [43.6532, -79.3832],  zoom: 10, bbox: [43.85, -79.70,  43.55, -79.10],  provider: "none" },
-  { id: "vancouver",       name: "Vancouver",         center: [49.2827, -123.1207], zoom: 10, bbox: [49.37, -123.32, 49.18, -122.95], provider: "none" },
-  { id: "mexico-city",     name: "Mexico City",       center: [19.4326, -99.1332],  zoom: 10, bbox: [19.57, -99.30,  19.32, -98.95],  provider: "none" },
+  // ── Country-level train departures (transport.rest) ───────────────────────
+  { id: "finland",         name: "Finland",           center: [61.9241, 25.7482],   zoom: 6,  bbox: [70.20, 19.00, 59.70, 31.90],      provider: "transport-rest" },
+  { id: "switzerland",     name: "Switzerland",       center: [46.8182,  8.2275],   zoom: 7,  bbox: [47.85, 5.95, 45.75, 10.55],       provider: "transport-rest" },
+  { id: "luxembourg",      name: "Luxembourg",        center: [49.8153,  6.1296],   zoom: 9,  bbox: [50.20, 5.73, 49.42, 6.53],        provider: "transport-rest" },
+  { id: "germany",         name: "Germany",           center: [51.1657, 10.4515],   zoom: 6,  bbox: [55.10, 5.86, 47.20, 15.05],       provider: "transport-rest" },
+  { id: "austria",         name: "Austria",           center: [47.5162, 14.5501],   zoom: 7,  bbox: [49.05, 9.50, 46.35, 17.20],       provider: "transport-rest" },
+  { id: "netherlands",     name: "Netherlands",       center: [52.1326,  5.2913],   zoom: 7,  bbox: [53.70, 3.20, 50.70, 7.30],        provider: "transport-rest" }
 ];
 
 const citySelect = document.getElementById("citySelect");
@@ -92,11 +70,6 @@ const API_PROXY_PATH = "/api/trains";
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
   "https://api-v3.amtraker.com/v1/trains"
-];
-const OVERPASS_ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.openstreetmap.fr/api/interpreter"
 ];
 const LIVE_REFRESH_INTERVAL_MS = 30000;
 const LIVE_ANIMATION_DURATION_MS = 7000;
@@ -160,40 +133,6 @@ function parseAmtraker(data, city) {
     .filter((train) => train && inBbox(train.lat, train.lon, city.bbox));
 }
 
-function parseOverpass(data, city) {
-  const rows = Array.isArray(data?.elements) ? data.elements : [];
-  const stations = [];
-
-  for (const row of rows) {
-    if (row.type !== "node") {
-      continue;
-    }
-
-    const lat = Number(row.lat);
-    const lon = Number(row.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) {
-      continue;
-    }
-
-    const tags = row.tags || {};
-    const name = tags.name || tags.ref || "Rail stop";
-    stations.push({
-      id: String(row.id ?? `${lat},${lon}`),
-      line: name,
-      label: tags.operator || tags.network || "Railway station",
-      status: tags.railway || "station",
-      heading: null,
-      speed: null,
-      state: "station",
-      type: "station",
-      lat,
-      lon
-    });
-  }
-
-  return stations.slice(0, 250);
-}
-
 async function fetchJsonFromFirstHealthy(urls, init, timeoutMs = 12000) {
   let lastError = null;
 
@@ -216,43 +155,19 @@ async function fetchJsonFromFirstHealthy(urls, init, timeoutMs = 12000) {
   throw lastError || new Error("No healthy API endpoint available");
 }
 
-function buildOverpassQuery(city) {
-  const [north, west, south, east] = city.bbox;
-  return `[out:json][timeout:20];node["railway"~"station|halt|tram_stop|subway_entrance"](${south},${west},${north},${east});out body 300;`;
-}
-
 async function fetchBrowserDirect(city) {
   if (city.provider === "amtraker") {
-    try {
-      const amtrakerData = await fetchJsonFromFirstHealthy(AMTRAKER_ENDPOINTS, { cache: "no-store" });
-      const amtrakerTrains = parseAmtraker(amtrakerData, city);
-      if (amtrakerTrains.length) {
-        return {
-          trains: amtrakerTrains,
-          message: `${amtrakerTrains.length} active Amtrak train${amtrakerTrains.length !== 1 ? "s" : ""} in this area.`
-        };
-      }
-    } catch {
-      // Fall back to station-level data below.
-    }
+    const amtrakerData = await fetchJsonFromFirstHealthy(AMTRAKER_ENDPOINTS, { cache: "no-store" });
+    const amtrakerTrains = parseAmtraker(amtrakerData, city);
+    return {
+      trains: amtrakerTrains,
+      message: amtrakerTrains.length
+        ? `${amtrakerTrains.length} active Amtrak train${amtrakerTrains.length !== 1 ? "s" : ""} in this area.`
+        : "No live Amtrak trains found in this area right now."
+    };
   }
 
-  const overpassData = await fetchJsonFromFirstHealthy(
-    OVERPASS_ENDPOINTS,
-    {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=UTF-8" },
-      body: buildOverpassQuery(city),
-      cache: "no-store"
-    }
-  );
-  const overpassStations = parseOverpass(overpassData, city);
-  return {
-    trains: overpassStations,
-    message: overpassStations.length
-      ? `Showing ${overpassStations.length} railway station${overpassStations.length !== 1 ? "s" : ""} (no live train API for this city yet).`
-      : "No railway stations found for this city."
-  };
+  throw new Error("This location needs the server /api/trains proxy because the provider is integrated server-side.");
 }
 
 async function fetchFromProxy(city) {
