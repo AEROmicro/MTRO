@@ -6,50 +6,11 @@ const HEADING_DEG = {
 };
 
 const CITIES = [
-  { id: "washington-dc", name: "Washington, DC", center: [38.9072, -77.0369], zoom: 10, bbox: [39.18, -77.5, 38.65, -76.73], provider: "amtraker", timezone: "America/New_York" },
-  { id: "new-york-city", name: "New York City", center: [40.7128, -74.0060], zoom: 10, bbox: [41.05, -74.35, 40.45, -73.6], provider: "amtraker", timezone: "America/New_York" },
-  { id: "boston", name: "Boston", center: [42.3601, -71.0589], zoom: 10, bbox: [42.58, -71.35, 42.17, -70.85], provider: "mbta-json", timezone: "America/New_York" },
-  { id: "philadelphia", name: "Philadelphia", center: [39.9526, -75.1652], zoom: 10, bbox: [40.08, -75.35, 39.83, -74.95], provider: "amtraker", timezone: "America/New_York" },
-  { id: "baltimore", name: "Baltimore", center: [39.2904, -76.6122], zoom: 10, bbox: [39.38, -76.75, 39.2, -76.5], provider: "amtraker", timezone: "America/New_York" },
-  { id: "richmond-va", name: "Richmond, VA", center: [37.5407, -77.4360], zoom: 10, bbox: [37.65, -77.6, 37.43, -77.3], provider: "amtraker", timezone: "America/New_York" },
-  { id: "charlotte", name: "Charlotte, NC", center: [35.2271, -80.8431], zoom: 10, bbox: [35.37, -80.98, 35.12, -80.68], provider: "amtraker", timezone: "America/New_York" },
-  { id: "atlanta", name: "Atlanta", center: [33.7490, -84.3880], zoom: 10, bbox: [33.92, -84.65, 33.62, -84.18], provider: "marta-json", timezone: "America/New_York" },
-  { id: "miami", name: "Miami", center: [25.7617, -80.1918], zoom: 10, bbox: [25.92, -80.42, 25.59, -80.0], provider: "amtraker", timezone: "America/New_York" },
-  { id: "orlando", name: "Orlando", center: [28.5383, -81.3792], zoom: 10, bbox: [28.68, -81.55, 28.4, -81.22], provider: "amtraker", timezone: "America/New_York" },
-  { id: "new-orleans", name: "New Orleans", center: [29.9511, -90.0715], zoom: 10, bbox: [30.1, -90.3, 29.85, -89.87], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "chicago", name: "Chicago", center: [41.8781, -87.6298], zoom: 10, bbox: [42.1, -87.95, 41.62, -87.45], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "milwaukee", name: "Milwaukee", center: [43.0389, -87.9065], zoom: 10, bbox: [43.22, -88.1, 42.95, -87.77], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "minneapolis", name: "Minneapolis", center: [44.9778, -93.2650], zoom: 10, bbox: [45.08, -93.45, 44.86, -93.12], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "st-louis", name: "St. Louis", center: [38.6270, -90.1994], zoom: 10, bbox: [38.78, -90.42, 38.5, -89.97], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "kansas-city", name: "Kansas City", center: [39.0997, -94.5786], zoom: 10, bbox: [39.25, -94.78, 38.96, -94.38], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "detroit", name: "Detroit", center: [42.3314, -83.0458], zoom: 10, bbox: [42.45, -83.28, 42.2, -82.88], provider: "amtraker", timezone: "America/New_York" },
-  { id: "pittsburgh", name: "Pittsburgh", center: [40.4406, -79.9959], zoom: 10, bbox: [40.58, -80.18, 40.32, -79.82], provider: "amtraker", timezone: "America/New_York" },
-  { id: "cleveland", name: "Cleveland", center: [41.4993, -81.6944], zoom: 10, bbox: [41.62, -81.88, 41.38, -81.52], provider: "amtraker", timezone: "America/New_York" },
-  { id: "houston", name: "Houston", center: [29.7604, -95.3698], zoom: 10, bbox: [29.92, -95.58, 29.6, -95.18], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "denver", name: "Denver", center: [39.7392, -104.9903], zoom: 10, bbox: [39.88, -105.12, 39.59, -104.85], provider: "amtraker", timezone: "America/Denver" },
-  { id: "salt-lake-city", name: "Salt Lake City", center: [40.7608, -111.8910], zoom: 10, bbox: [40.88, -112.03, 40.66, -111.76], provider: "amtraker", timezone: "America/Denver" },
-  { id: "albuquerque", name: "Albuquerque", center: [35.0853, -106.6056], zoom: 10, bbox: [35.22, -106.77, 34.98, -106.45], provider: "amtraker", timezone: "America/Denver" },
-  { id: "seattle", name: "Seattle", center: [47.6062, -122.3321], zoom: 10, bbox: [47.78, -122.55, 47.48, -122.2], provider: "amtraker", timezone: "America/Los_Angeles" },
-  { id: "portland-or", name: "Portland, OR", center: [45.5051, -122.6750], zoom: 10, bbox: [45.65, -122.88, 45.43, -122.5], provider: "gtfsrt-protobuf", timezone: "America/Los_Angeles" },
-  { id: "sacramento", name: "Sacramento", center: [38.5816, -121.4944], zoom: 10, bbox: [38.72, -121.65, 38.47, -121.37], provider: "amtraker", timezone: "America/Los_Angeles" },
-  { id: "san-francisco", name: "San Francisco", center: [37.7749, -122.4194], zoom: 10, bbox: [37.93, -122.56, 37.7, -122.3], provider: "gtfsrt-protobuf", timezone: "America/Los_Angeles" },
-  { id: "oakland", name: "Oakland", center: [37.8044, -122.2712], zoom: 10, bbox: [37.9, -122.38, 37.65, -122.1], provider: "gtfsrt-protobuf", timezone: "America/Los_Angeles" },
-  { id: "los-angeles", name: "Los Angeles", center: [34.0522, -118.2437], zoom: 10, bbox: [34.22, -118.6, 33.88, -117.95], provider: "amtraker", timezone: "America/Los_Angeles" },
-  { id: "toronto", name: "Toronto", center: [43.6532, -79.3832], zoom: 10, bbox: [43.88, -79.67, 43.5, -79.1], provider: "nextbus-json", timezone: "America/Toronto" },
-  { id: "luxembourg", name: "Luxembourg", center: [49.6116, 6.1319], zoom: 9, bbox: [50.2, 5.73, 49.42, 6.53], provider: "gtfsrt-protobuf", timezone: "Europe/Luxembourg" },
-  { id: "france", name: "France (National Rail)", center: [46.2276, 2.2137], zoom: 6, bbox: [51.3, -5.4, 41.2, 9.8], provider: "gtfsrt-protobuf", timezone: "Europe/Paris" },
-  { id: "paris-region", name: "Paris Region", center: [48.8566, 2.3522], zoom: 9, bbox: [49.4, 1.0, 48.1, 3.7], provider: "gtfsrt-protobuf", timezone: "Europe/Paris" },
-  { id: "netherlands", name: "Netherlands", center: [52.1326, 5.2913], zoom: 7, bbox: [53.7, 3.2, 50.7, 7.3], provider: "gtfsrt-protobuf", timezone: "Europe/Amsterdam" },
-  { id: "norway", name: "Norway", center: [60.4720, 8.4689], zoom: 5, bbox: [71.3, 4.5, 57.8, 31.3], provider: "gtfsrt-protobuf", timezone: "Europe/Oslo" },
-  { id: "finland", name: "Finland", center: [61.9241, 25.7482], zoom: 6, bbox: [70.2, 19.0, 59.7, 31.9], provider: "digitraffic-json", timezone: "Europe/Helsinki" },
-  { id: "belgium", name: "Belgium", center: [50.5039, 4.4699], zoom: 7, bbox: [51.6, 2.5, 49.4, 6.4], provider: "gtfsrt-protobuf", timezone: "Europe/Brussels" },
-  { id: "sydney", name: "Sydney & NSW", center: [-33.8688, 151.2093], zoom: 8, bbox: [-32.8, 150.5, -34.4, 152.2], provider: "gtfsrt-protobuf", timezone: "Australia/Sydney" },
-  { id: "auckland", name: "Auckland", center: [-36.8509, 174.7645], zoom: 9, bbox: [-36.7, 174.4, -37.2, 175.2], provider: "gtfsrt-protobuf", timezone: "Pacific/Auckland" },
-  { id: "santiago", name: "Santiago", center: [-33.4489, -70.6693], zoom: 10, bbox: [-33.2, -70.9, -33.8, -70.4], provider: "gtfsrt-protobuf", timezone: "America/Santiago" },
-  { id: "taiwan-hsr", name: "Taiwan High-Speed Rail", center: [23.6978, 120.9605], zoom: 7, bbox: [25.5, 119.9, 21.8, 122.3], provider: "taiwan-json", timezone: "Asia/Taipei" },
-  { id: "transitous-global", name: "Transitous Global Mirror", center: [20, 0], zoom: 2, bbox: [85, -180, -85, 180], provider: "gtfsrt-protobuf", timezone: "UTC" },
-  { id: "switzerland", name: "Switzerland", center: [46.8182, 8.2275], zoom: 7, bbox: [47.85, 5.95, 45.75, 10.55], provider: "gtfsrt-protobuf", timezone: "Europe/Zurich" },
-  { id: "london-central", name: "London Central", center: [51.5072, -0.1276], zoom: 10, bbox: [51.67, -0.56, 51.25, 0.28], provider: "tfl-xml", timezone: "Europe/London" }
+  { id: "washington-dc", name: "Washington, DC", center: [38.9072, -77.0369], zoom: 10, bbox: [39.18, -77.5, 38.65, -76.73], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
+  { id: "new-york-city", name: "New York City", center: [40.7128, -74.0060], zoom: 10, bbox: [41.05, -74.35, 40.45, -73.6], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
+  { id: "boston", name: "Boston", center: [42.3601, -71.0589], zoom: 10, bbox: [42.58, -71.35, 42.17, -70.85], provider: "multi", timezone: "America/New_York" },
+  { id: "philadelphia", name: "Philadelphia", center: [39.9526, -75.1652], zoom: 10, bbox: [40.08, -75.35, 39.83, -74.95], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
+  { id: "bay-area", name: "Bay Area", center: [37.8044, -122.2712], zoom: 10, bbox: [38.10, -122.75, 37.20, -121.60], provider: "multi", timezone: "America/Los_Angeles" }
 ];
 
 const citySearch = document.getElementById("citySearch");
@@ -203,7 +164,8 @@ async function fetchJsonFromFirstHealthy(urls, init, timeoutMs = 12000) {
 }
 
 async function fetchBrowserDirect(city) {
-  if (city.provider === "amtraker") {
+  const fallbackProvider = city.directFallbackProvider || city.provider;
+  if (fallbackProvider === "amtraker") {
     const amtrakerData = await fetchJsonFromFirstHealthy(AMTRAKER_ENDPOINTS, { cache: "no-store" });
     const amtrakerTrains = parseAmtraker(amtrakerData, city);
     return {
@@ -251,7 +213,8 @@ async function fetchCityTrains(city) {
   try {
     return await fetchFromProxy(city);
   } catch (proxyError) {
-    if (city.provider !== "amtraker") {
+    const fallbackProvider = city.directFallbackProvider || city.provider;
+    if (fallbackProvider !== "amtraker") {
       const missingProxyRoute = proxyError?.status === 404 || proxyError?.status === 405;
       if (!missingProxyRoute) {
         return {
