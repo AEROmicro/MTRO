@@ -52,10 +52,14 @@ const TRANSPORT_REST_ENDPOINTS = [
 const BART_ENDPOINTS = [
   "https://api.bart.gov/api"
 ];
+// Public BART demo key documented by BART for no-auth sample usage.
 const DEFAULT_BART_API_KEY = "MW9S-E7SL-26DU-VV8V";
 const BART_API_KEY = process.env.BART_API_KEY || DEFAULT_BART_API_KEY;
+const RAIL_MODES = ["train", "subway", "tram"];
 const RAIL_PRODUCTS = ["national", "nationalexp", "regional", "regionalexp", "suburban", "train", "subway", "tram"];
 const RAIL_CATEGORY_PATTERN = /(rail|train|ice|ic|ec|re|rb|s\d|ir|tgv|rjx|ter|cfl)/i;
+const DEPARTURE_DURATION_MINUTES = 120;
+const MAX_DEPARTURE_RESULTS = 200;
 
 const jsonHeaders = {
   "content-type": "application/json; charset=UTF-8",
@@ -141,7 +145,7 @@ function parseBartDepartures(etdData, city, stationMap) {
         const minutes = String(estimate?.minutes || "Leaving");
         const cars = estimate?.length ? `${estimate.length} cars` : "Active";
         trains.push({
-          id: `${stationAbbr}-${destination}-${depIndex}-${minutes}-${i}`,
+          id: `${stationAbbr}-${destination}-${depIndex}-${i}`,
           line: `BART ${destination}`,
           label: stationAbbr || stationName,
           status: minutes === "Leaving" ? "Departing now" : `${minutes} min`,
@@ -167,7 +171,7 @@ function isRailDeparture(departure) {
   const mode = toRailMode(departure?.line?.mode);
   const product = toRailMode(departure?.line?.product);
   const category = toRailMode(departure?.line?.productName || departure?.line?.name);
-  if (mode && mode !== "train" && mode !== "subway" && mode !== "tram") return false;
+  if (mode && !RAIL_MODES.includes(mode)) return false;
   if (product && RAIL_PRODUCTS.includes(product)) return true;
   if (category && RAIL_CATEGORY_PATTERN.test(category)) return true;
   return !product && !mode;
@@ -276,7 +280,7 @@ async function loadCityData(city) {
     }
     const departuresData = await fetchFirst(
       TRANSPORT_REST_ENDPOINTS.map(
-        (base) => `${base}/stops/${encodeURIComponent(String(stopId))}/departures?duration=120&results=200&remarks=false&language=en`
+        (base) => `${base}/stops/${encodeURIComponent(String(stopId))}/departures?duration=${DEPARTURE_DURATION_MINUTES}&results=${MAX_DEPARTURE_RESULTS}&remarks=false&language=en`
       ),
       { cache: "no-store" }
     );
