@@ -59,7 +59,11 @@ const jsonHeaders = {
 
 const CACHE_TTL_MS = 15000;
 // Try canonical endpoint first, then common URL variants observed during upstream URL migrations.
-const TRANSITOUS_ENDPOINTS = ["https://api.transitous.org/gtfs-rt/", "https://api.transitous.org/gtfs-rt", "https://transitous.org/gtfs-rt/"];
+const TRANSITOUS_ENDPOINTS = [
+  "https://api.transitous.org/gtfs-rt/",
+  "https://api.transitous.org/gtfs-rt",
+  "https://transitous.org/gtfs-rt/"
+];
 const MS_TO_MPH_FACTOR = 2.23694;
 const MS_TO_KMH_FACTOR = 3.6;
 
