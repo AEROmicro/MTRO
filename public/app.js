@@ -167,7 +167,7 @@ async function fetchBrowserDirect(city) {
     };
   }
 
-  throw new Error("Proxy is required for this city's live train provider.");
+  throw new Error("This location needs the server /api/trains proxy because the provider is integrated server-side.");
 }
 
 async function fetchFromProxy(city) {
