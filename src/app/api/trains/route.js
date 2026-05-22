@@ -31,8 +31,8 @@ const CITIES = [
   { id: "seattle", provider: "amtraker", bbox: [47.78, -122.55, 47.48, -122.20], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "portland-or", provider: "gtfsrt-protobuf", bbox: [45.65, -122.88, 45.43, -122.50], endpoints: ["https://developer.trimet.org/gtfs/realtime/vehiclePositions"] },
   { id: "sacramento", provider: "amtraker", bbox: [38.72, -121.65, 38.47, -121.37], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "san-francisco", provider: "gtfsrt-protobuf", bbox: [37.93, -122.56, 37.70, -122.30], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb", "http://api.bart.gov/gtfsrt/vehiclepositions.aspx", "http://api.bart.gov/gtfsrt/vehicles.pb"] },
-  { id: "oakland", provider: "gtfsrt-protobuf", bbox: [37.90, -122.38, 37.65, -122.10], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb", "http://api.bart.gov/gtfsrt/vehiclepositions.aspx", "http://api.bart.gov/gtfsrt/vehicles.pb"] },
+  { id: "san-francisco", provider: "gtfsrt-protobuf", bbox: [37.93, -122.56, 37.70, -122.30], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
+  { id: "oakland", provider: "gtfsrt-protobuf", bbox: [37.90, -122.38, 37.65, -122.10], endpoints: ["https://api.bart.gov/gtfsrt/vehiclepositions.aspx", "https://api.bart.gov/gtfsrt/vehicles.pb"] },
   { id: "los-angeles", provider: "amtraker", bbox: [34.22, -118.60, 33.88, -117.95], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
 
   { id: "toronto", provider: "nextbus-json", bbox: [43.88, -79.67, 43.50, -79.10], endpoints: ["https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=ttc&t=0"] },
