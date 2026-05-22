@@ -24,9 +24,7 @@ const CITIES = [
   { id: "detroit", provider: "amtraker", bbox: [42.45, -83.28, 42.20, -82.88], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "pittsburgh", provider: "amtraker", bbox: [40.58, -80.18, 40.32, -79.82], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "cleveland", provider: "amtraker", bbox: [41.62, -81.88, 41.38, -81.52], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "dallas", provider: "amtraker", bbox: [33.00, -97.05, 32.62, -96.58], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "houston", provider: "amtraker", bbox: [29.92, -95.58, 29.60, -95.18], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
-  { id: "san-antonio", provider: "amtraker", bbox: [29.58, -98.68, 29.28, -98.32], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "denver", provider: "amtraker", bbox: [39.88, -105.12, 39.59, -104.85], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "salt-lake-city", provider: "amtraker", bbox: [40.88, -112.03, 40.66, -111.76], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
   { id: "albuquerque", provider: "amtraker", bbox: [35.22, -106.77, 34.98, -106.45], endpoints: ["https://api-v3.amtraker.com/v3/trains", "https://api-v3.amtraker.com/v1/trains"] },
@@ -280,7 +278,15 @@ async function fetchWithTimeout(url, init = {}, timeoutMs = 12000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal, cache: "no-store" });
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      cache: "no-store",
+      headers: {
+        accept: "application/json;q=1.0, application/protobuf;q=0.95, application/vnd.google.protobuf;q=0.95, application/octet-stream;q=0.9, text/xml;q=0.8, */*;q=0.5",
+        ...(init.headers || {})
+      }
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response;
   } finally {
@@ -301,8 +307,12 @@ async function fetchFirst(urls, fetcher) {
 }
 
 async function loadTransitousFallback(city, fallbackLine = "Transitous") {
-  const buffer = await fetchFirst(TRANSITOUS_ENDPOINTS, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
-  return parseGtfsRealtime(buffer, city, fallbackLine);
+  try {
+    const buffer = await fetchFirst(TRANSITOUS_ENDPOINTS, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
+    return parseGtfsRealtime(buffer, city, fallbackLine);
+  } catch (error) {
+    throw new Error(`Transitous fallback failed: ${error?.message || "unknown error"}`);
+  }
 }
 
 async function loadCityData(city) {
@@ -333,11 +343,15 @@ async function loadCityData(city) {
       };
     }
 
+    const bothFeedErrors = amtrakerError && transitousError;
+    const hasFeedError = amtrakerError || transitousError;
     return {
       trains: [],
-      message: amtrakerError || transitousError
-        ? "Primary train feeds are temporarily unavailable for this area."
-        : "No train positions found for this area."
+      message: bothFeedErrors
+        ? "Primary and fallback train feeds are temporarily unavailable for this area."
+        : hasFeedError
+          ? "Some train feeds are temporarily unavailable for this area."
+          : "No train positions found for this area."
     };
   }
 
@@ -398,21 +412,34 @@ async function loadCityData(city) {
   if (city.provider === "gtfsrt-protobuf") {
     let trains = [];
     let sourceLabel = "GTFS-RT";
+    let gtfsrtError = null;
+    let transitousError = null;
     try {
       const buffer = await fetchFirst(city.endpoints, async (url) => (await fetchWithTimeout(url)).arrayBuffer());
       trains = parseGtfsRealtime(buffer, city, city.id);
-    } catch {
+    } catch (error) {
+      gtfsrtError = error;
       trains = [];
     }
     if (!trains.length) {
       try {
         trains = await loadTransitousFallback(city);
         if (trains.length) sourceLabel = "Transitous GTFS-RT";
-      } catch {}
+      } catch (error) {
+        transitousError = error;
+      }
     }
+    const bothFeedErrors = gtfsrtError && transitousError;
+    const hasFeedError = gtfsrtError || transitousError;
     return {
       trains,
-      message: trains.length ? `Loaded ${trains.length} ${sourceLabel} vehicle positions.` : "No GTFS-RT vehicle positions found for this area."
+      message: trains.length
+        ? `Loaded ${trains.length} ${sourceLabel} vehicle positions.`
+        : bothFeedErrors
+          ? "Primary and fallback GTFS-RT feeds are temporarily unavailable for this area."
+          : hasFeedError
+            ? "Some GTFS-RT feeds are temporarily unavailable for this area."
+            : "No GTFS-RT vehicle positions found for this area."
     };
   }
 
@@ -460,7 +487,7 @@ export async function GET(request) {
   } catch (error) {
     return new Response(
       JSON.stringify({ trains: [], message: `Unable to load train data: ${error.message}` }),
-      { status: 502, headers: jsonHeaders }
+      { status: 200, headers: jsonHeaders }
     );
   }
 }

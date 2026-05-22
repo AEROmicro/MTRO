@@ -25,9 +25,7 @@ const CITIES = [
   { id: "detroit", name: "Detroit", center: [42.3314, -83.0458], zoom: 10, bbox: [42.45, -83.28, 42.2, -82.88], provider: "amtraker", timezone: "America/New_York" },
   { id: "pittsburgh", name: "Pittsburgh", center: [40.4406, -79.9959], zoom: 10, bbox: [40.58, -80.18, 40.32, -79.82], provider: "amtraker", timezone: "America/New_York" },
   { id: "cleveland", name: "Cleveland", center: [41.4993, -81.6944], zoom: 10, bbox: [41.62, -81.88, 41.38, -81.52], provider: "amtraker", timezone: "America/New_York" },
-  { id: "dallas", name: "Dallas / Fort Worth", center: [32.7767, -96.7970], zoom: 10, bbox: [33.0, -97.05, 32.62, -96.58], provider: "amtraker", timezone: "America/Chicago" },
   { id: "houston", name: "Houston", center: [29.7604, -95.3698], zoom: 10, bbox: [29.92, -95.58, 29.6, -95.18], provider: "amtraker", timezone: "America/Chicago" },
-  { id: "san-antonio", name: "San Antonio", center: [29.4241, -98.4936], zoom: 10, bbox: [29.58, -98.68, 29.28, -98.32], provider: "amtraker", timezone: "America/Chicago" },
   { id: "denver", name: "Denver", center: [39.7392, -104.9903], zoom: 10, bbox: [39.88, -105.12, 39.59, -104.85], provider: "amtraker", timezone: "America/Denver" },
   { id: "salt-lake-city", name: "Salt Lake City", center: [40.7608, -111.8910], zoom: 10, bbox: [40.88, -112.03, 40.66, -111.76], provider: "amtraker", timezone: "America/Denver" },
   { id: "albuquerque", name: "Albuquerque", center: [35.0853, -106.6056], zoom: 10, bbox: [35.22, -106.77, 34.98, -106.45], provider: "amtraker", timezone: "America/Denver" },
@@ -182,7 +180,14 @@ async function fetchJsonFromFirstHealthy(urls, init, timeoutMs = 12000) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url, { ...init, signal: controller.signal });
+      const response = await fetch(url, {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          accept: "application/json",
+          ...(init?.headers || {})
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
