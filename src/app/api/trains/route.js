@@ -416,7 +416,7 @@ async function loadSourceData(city, source) {
         lastError = error;
       }
     }
-    throw lastError || new Error("No valid GTFS-RT protobuf feed available");
+    throw lastError || new Error("Failed to parse GTFS-RT feed from any endpoint");
   }
 
   throw new Error(`Unsupported provider: ${source.provider}`);
