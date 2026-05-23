@@ -39,7 +39,7 @@ const WMATA_TRAIN_POSITIONS_ENDPOINTS = [
   "https://api.wmata.com/TrainPositions/TrainPositions"
 ];
 const METRA_ENDPOINTS = METRA_API_KEY
-  ? [`https://gtfspublic.metrarr.com/gtfs/public/positions?api_token=${encodeURIComponent(METRA_API_KEY)}`]
+  ? [`https://gtfspublic.metrarail.com/gtfs/public/positions?api_token=${encodeURIComponent(METRA_API_KEY)}`]
   : [];
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
@@ -213,6 +213,7 @@ const jsonHeaders = {
 };
 
 const CACHE_TTL_MS = 15000;
+const MIN_STOPPED_THRESHOLD_SECONDS = 15;
 const MS_TO_MPH_FACTOR = 2.23694;
 const MS_TO_KMH_FACTOR = 3.6;
 
@@ -296,15 +297,18 @@ function parseWmataJson(data, city) {
       const lineCode = row.LineCode ?? row.ServiceType ?? "WMATA";
       const atStopSeconds = Number(row.SecondsAtLocation);
       const destination = row.DestinationStationName ?? row.DestinationStationCode ?? row.ServiceType ?? "In service";
+      const status = Number.isFinite(atStopSeconds) && atStopSeconds >= MIN_STOPPED_THRESHOLD_SECONDS
+        ? `Stopped ${Math.round(atStopSeconds)}s`
+        : "Active";
 
       return {
-        id: String(trainId || `${lat},${lon},${index}`),
+        id: String(trainId || `wmata-unknown-${index}`),
         line: String(lineCode),
         label: String(trainId || "WMATA train"),
-        status: Number.isFinite(atStopSeconds) ? `Stopped ${Math.max(0, Math.round(atStopSeconds))}s` : "Active",
+        status,
         heading: null,
         speed: null,
-        speedUnit: "km/h",
+        speedUnit: "mph",
         state: String(destination),
         type: "train",
         lat,
