@@ -4,10 +4,42 @@ import gtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
 
+/**
+ * Parse API keys from one or more env-style inputs and return unique values.
+ * @param {...string} rawValues Comma/whitespace separated key strings.
+ * @returns {string[]} Unique, trimmed API keys.
+ */
+function parseApiKeys(...rawValues) {
+  return [...new Set(
+    rawValues
+      .flatMap((value) => String(value || "").split(/[,\s]+/))
+      .map((value) => value.trim())
+      .filter(Boolean)
+  )];
+}
+
+function keysOrNull(keys) {
+  return Array.isArray(keys) && keys.length ? keys : [null];
+}
+
 const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
-const WMATA_API_KEY = process.env.WMATA_API_KEY;
+const WMATA_API_KEYS = parseApiKeys(
+  process.env.WMATA_API_KEYS,
+  process.env.WMATA_API_KEY,
+  process.env.WMATA_PRIMARY_KEY,
+  process.env.WMATA_SECONDARY_KEY
+);
 const MTA_API_KEY = process.env.MTA_API_KEY;
-const METRA_API_KEY = process.env.METRA_API_KEY;
+const METRA_API_KEYS = parseApiKeys(
+  process.env.METRA_API_KEYS,
+  process.env.METRA_API_KEY
+);
+const HOUSTON_METRO_API_KEYS = parseApiKeys(
+  process.env.HOUSTON_METRO_API_KEYS,
+  process.env.HOUSTON_METRO_API_KEY,
+  process.env.HOUSTON_METRO_PRIMARY_KEY,
+  process.env.HOUSTON_METRO_SECONDARY_KEY
+);
 
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
@@ -40,10 +72,39 @@ const WMATA_TRAIN_POSITIONS_ENDPOINTS = [
   "https://api.wmata.com/TrainPositions/TrainPositions?contentType=json",
   "https://api.wmata.com/TrainPositions/TrainPositions"
 ];
+const WMATA_TRAIN_POSITION_SOURCES = keysOrNull(WMATA_API_KEYS).map((key) => ({
+  provider: "wmata-json",
+  endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
+  label: "WMATA TrainPositions",
+  headers: key ? { api_key: key } : undefined
+}));
+const WMATA_RAIL_SOURCES = keysOrNull(WMATA_API_KEYS).map((key) => ({
+  provider: "gtfsrt-protobuf",
+  endpoints: WMATA_RAIL_ENDPOINTS,
+  fallbackLine: "WMATA",
+  label: "WMATA Rail GTFS-RT",
+  headers: key ? { api_key: key } : undefined
+}));
 const METRA_ENDPOINTS = [
   "https://gtfspublic.metrarail.com/gtfs/public/positions",
-  METRA_API_KEY ? `https://gtfspublic.metrarail.com/gtfs/public/positions?api_token=${encodeURIComponent(METRA_API_KEY)}` : null
+  ...METRA_API_KEYS.map((key) => `https://gtfspublic.metrarail.com/gtfs/public/positions?api_token=${encodeURIComponent(key)}`)
 ].filter(Boolean);
+const HOUSTON_METRO_ENDPOINTS = [
+  "https://api.ridemetro.org/data/gtfs/vehiclepositions",
+  "https://api.ridemetro.org/data/gtfs/vehiclepositions/",
+  "https://api.ridemetro.org/api/gtfs/vehiclepositions",
+  "https://api.ridemetro.org/api/gtfs/vehiclepositions/"
+];
+const HOUSTON_METRO_SOURCE_BASE = {
+  provider: "gtfsrt-protobuf",
+  endpoints: HOUSTON_METRO_ENDPOINTS,
+  fallbackLine: "METRO",
+  label: "METRO GTFS Realtime"
+};
+const HOUSTON_METRO_SOURCES = keysOrNull(HOUSTON_METRO_API_KEYS).map((key) => ({
+  ...HOUSTON_METRO_SOURCE_BASE,
+  headers: key ? { "Ocp-Apim-Subscription-Key": key } : undefined
+}));
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
@@ -70,19 +131,8 @@ const CITIES = [
     bbox: [39.18, -77.50, 38.65, -76.73],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: VRE_ENDPOINTS, fallbackLine: "VRE", label: "VRE GTFS-RT" },
-      {
-        provider: "wmata-json",
-        endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
-        label: "WMATA TrainPositions",
-        headers: WMATA_API_KEY ? { api_key: WMATA_API_KEY } : undefined
-      },
-      {
-        provider: "gtfsrt-protobuf",
-        endpoints: WMATA_RAIL_ENDPOINTS,
-        fallbackLine: "WMATA",
-        label: "WMATA Rail GTFS-RT",
-        headers: WMATA_API_KEY ? { api_key: WMATA_API_KEY } : undefined
-      },
+      ...WMATA_TRAIN_POSITION_SOURCES,
+      ...WMATA_RAIL_SOURCES,
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -207,6 +257,7 @@ const CITIES = [
     provider: "multi",
     bbox: [30.20, -95.80, 29.40, -95.00],
     sources: [
+      ...HOUSTON_METRO_SOURCES,
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Houston Rail", label: "Transitous GTFS-RT" }
     ]
