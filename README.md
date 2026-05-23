@@ -1,4 +1,5 @@
-# MTRO
+![MTRO Logo](MTRO_LOGO.png)
+
 
 MTRO is a Next.js train-tracking web app with a modern black/white UI, city filtering, and OpenStreetMap mapping.
 
