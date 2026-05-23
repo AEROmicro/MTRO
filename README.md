@@ -34,17 +34,18 @@ Requires Node.js 22+ (for `gtfs-realtime-bindings`).
 - OpenStreetMap + live train markers
 - Same-origin API proxy at `/api/trains`
 - UTC and selected-city local time bar with timezone abbreviation
-- City weather summary with Celsius/Fahrenheit toggle persisted via cookie (`mtro_temp_unit`)
 - In-session past-data snapshots for quick playback
 - Shared server-side city response caching to reduce duplicate upstream requests
 - City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; and Chicago
 - Multi-source API coverage for these cities including:
   - VRE GTFS-RT (Washington, DC area commuter rail)
+  - WMATA TrainPositions + WMATA Rail GTFS-RT (Washington, DC, API key required)
   - MBTA vehicles API (Boston)
   - BART GTFS-RT (Bay Area)
   - Sound Transit GTFS-RT + fallbacks (Seattle)
   - MARTA GTFS-RT + fallbacks (Atlanta)
   - RTD GTFS-RT (Denver)
   - SEPTA TrainView (Philadelphia)
+  - Metra GTFS-RT (Chicago, API key required)
   - Amtraker US network
-  - Transitous GTFS-RT fallback (including Chicago where no keyless official rail vehicle feed is available)
+  - Transitous GTFS-RT fallback

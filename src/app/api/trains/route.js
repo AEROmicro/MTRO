@@ -7,6 +7,7 @@ const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
 const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
 const WMATA_API_KEY = process.env.WMATA_API_KEY;
 const MTA_API_KEY = process.env.MTA_API_KEY;
+const METRA_API_KEY = process.env.METRA_API_KEY;
 
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
@@ -33,6 +34,13 @@ const WMATA_RAIL_ENDPOINTS = [
   "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions.pb",
   "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions"
 ];
+const WMATA_TRAIN_POSITIONS_ENDPOINTS = [
+  "https://api.wmata.com/TrainPositions/TrainPositions?contentType=json",
+  "https://api.wmata.com/TrainPositions/TrainPositions"
+];
+const METRA_ENDPOINTS = METRA_API_KEY
+  ? [`https://gtfspublic.metrarr.com/gtfs/public/positions?api_token=${encodeURIComponent(METRA_API_KEY)}`]
+  : [];
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
@@ -59,13 +67,23 @@ const CITIES = [
     bbox: [39.18, -77.50, 38.65, -76.73],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: VRE_ENDPOINTS, fallbackLine: "VRE", label: "VRE GTFS-RT" },
-      {
-        provider: "gtfsrt-protobuf",
-        endpoints: WMATA_RAIL_ENDPOINTS,
-        fallbackLine: "WMATA",
-        label: "WMATA Rail GTFS-RT",
-        headers: WMATA_API_KEY ? { api_key: WMATA_API_KEY } : undefined
-      },
+      ...(WMATA_API_KEY
+        ? [
+          {
+            provider: "wmata-json",
+            endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
+            label: "WMATA TrainPositions",
+            headers: { api_key: WMATA_API_KEY }
+          },
+          {
+            provider: "gtfsrt-protobuf",
+            endpoints: WMATA_RAIL_ENDPOINTS,
+            fallbackLine: "WMATA",
+            label: "WMATA Rail GTFS-RT",
+            headers: { api_key: WMATA_API_KEY }
+          }
+        ]
+        : []),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -180,6 +198,9 @@ const CITIES = [
     provider: "multi",
     bbox: [42.15, -88.10, 41.60, -87.45],
     sources: [
+      ...(METRA_ENDPOINTS.length
+        ? [{ provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" }]
+        : []),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Chicago Rail", label: "Transitous GTFS-RT" }
     ]
@@ -255,6 +276,36 @@ function parseMbta(data, city) {
         speed: Number.isFinite(Number(attrs.speed)) ? Math.round(Number(attrs.speed) * MS_TO_MPH_FACTOR) : null,
         speedUnit: "mph",
         state: String(attrs.occupancy_status || "In service"),
+        type: "train",
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseWmataJson(data, city) {
+  const rows = Array.isArray(data?.TrainPositions) ? data.TrainPositions : [];
+  return rows
+    .map((row, index) => {
+      if (!row || typeof row !== "object") return null;
+      const lat = Number(row.Lat ?? row.lat ?? row.latitude);
+      const lon = Number(row.Lon ?? row.lon ?? row.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+      const trainId = row.TrainId ?? row.TrainNumber ?? row.Car ?? row.ID;
+      const lineCode = row.LineCode ?? row.ServiceType ?? "WMATA";
+      const atStopSeconds = Number(row.SecondsAtLocation);
+      const destination = row.DestinationStationName ?? row.DestinationStationCode ?? row.ServiceType ?? "In service";
+
+      return {
+        id: String(trainId || `${lat},${lon},${index}`),
+        line: String(lineCode),
+        label: String(trainId || "WMATA train"),
+        status: Number.isFinite(atStopSeconds) ? `Stopped ${Math.max(0, Math.round(atStopSeconds))}s` : "Active",
+        heading: null,
+        speed: null,
+        speedUnit: "km/h",
+        state: String(destination),
         type: "train",
         lat,
         lon
@@ -424,6 +475,11 @@ async function loadSourceData(city, source) {
   if (source.provider === "septa-json") {
     const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseGenericGeoJson(data, city, "SEPTA");
+  }
+
+  if (source.provider === "wmata-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseWmataJson(data, city);
   }
 
   if (source.provider === "gtfsrt-protobuf") {
