@@ -36,16 +36,16 @@ Requires Node.js 22+ (for `gtfs-realtime-bindings`).
 - UTC and selected-city local time bar with timezone abbreviation
 - In-session past-data snapshots for quick playback
 - Shared server-side city response caching to reduce duplicate upstream requests
-- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; and Chicago
+- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Houston; Milwaukee; and Los Angeles
 - Multi-source API coverage for these cities including:
   - VRE GTFS-RT (Washington, DC area commuter rail)
-  - WMATA TrainPositions + WMATA Rail GTFS-RT (Washington, DC, API key required)
+  - WMATA TrainPositions + WMATA Rail GTFS-RT (Washington, DC)
   - MBTA vehicles API (Boston)
   - BART GTFS-RT (Bay Area)
   - Sound Transit GTFS-RT + fallbacks (Seattle)
   - MARTA GTFS-RT + fallbacks (Atlanta)
   - RTD GTFS-RT (Denver)
   - SEPTA TrainView (Philadelphia)
-  - Metra GTFS-RT (Chicago, API key required)
+  - Metra GTFS-RT (Chicago)
   - Amtraker US network
   - Transitous GTFS-RT fallback

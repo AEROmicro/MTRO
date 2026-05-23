@@ -14,12 +14,14 @@ const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v1/trains"
 ];
 const BART_ENDPOINTS = [
-  "https://api.bart.gov/gtfsrt/vehicles",
-  "https://api.bart.gov/gtfsrt/vehiclepositions",
+  `https://api.bart.gov/gtfsrt/vehicleposition.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
   `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  `https://api.bart.gov/gtfsrt/vehicles.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  `https://api.bart.gov/gtfsrt/vehicleposition.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  `https://api.bart.gov/gtfsrt/vehiclepositions.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  "https://api.bart.gov/gtfsrt/vehicleposition.aspx",
   "https://api.bart.gov/gtfsrt/vehiclepositions.aspx",
-  "https://api.bart.gov/gtfsrt/vehicles.pb"
+  "https://api.bart.gov/gtfsrt/vehicleposition.pb",
+  "https://api.bart.gov/gtfsrt/vehiclepositions.pb"
 ];
 const SOUND_TRANSIT_ENDPOINTS = [
   "https://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb"
@@ -38,9 +40,10 @@ const WMATA_TRAIN_POSITIONS_ENDPOINTS = [
   "https://api.wmata.com/TrainPositions/TrainPositions?contentType=json",
   "https://api.wmata.com/TrainPositions/TrainPositions"
 ];
-const METRA_ENDPOINTS = METRA_API_KEY
-  ? [`https://gtfspublic.metrarail.com/gtfs/public/positions?api_token=${encodeURIComponent(METRA_API_KEY)}`]
-  : [];
+const METRA_ENDPOINTS = [
+  "https://gtfspublic.metrarail.com/gtfs/public/positions",
+  METRA_API_KEY ? `https://gtfspublic.metrarail.com/gtfs/public/positions?api_token=${encodeURIComponent(METRA_API_KEY)}` : null
+].filter(Boolean);
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
@@ -67,23 +70,19 @@ const CITIES = [
     bbox: [39.18, -77.50, 38.65, -76.73],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: VRE_ENDPOINTS, fallbackLine: "VRE", label: "VRE GTFS-RT" },
-      ...(WMATA_API_KEY
-        ? [
-          {
-            provider: "wmata-json",
-            endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
-            label: "WMATA TrainPositions",
-            headers: { api_key: WMATA_API_KEY }
-          },
-          {
-            provider: "gtfsrt-protobuf",
-            endpoints: WMATA_RAIL_ENDPOINTS,
-            fallbackLine: "WMATA",
-            label: "WMATA Rail GTFS-RT",
-            headers: { api_key: WMATA_API_KEY }
-          }
-        ]
-        : []),
+      {
+        provider: "wmata-json",
+        endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
+        label: "WMATA TrainPositions",
+        headers: WMATA_API_KEY ? { api_key: WMATA_API_KEY } : undefined
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: WMATA_RAIL_ENDPOINTS,
+        fallbackLine: "WMATA",
+        label: "WMATA Rail GTFS-RT",
+        headers: WMATA_API_KEY ? { api_key: WMATA_API_KEY } : undefined
+      },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -198,11 +197,36 @@ const CITIES = [
     provider: "multi",
     bbox: [42.15, -88.10, 41.60, -87.45],
     sources: [
-      ...(METRA_ENDPOINTS.length
-        ? [{ provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" }]
-        : []),
+      { provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Chicago Rail", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "houston",
+    provider: "multi",
+    bbox: [30.20, -95.80, 29.40, -95.00],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Houston Rail", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "milwaukee",
+    provider: "multi",
+    bbox: [43.25, -88.20, 42.85, -87.75],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Milwaukee Rail", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "los-angeles",
+    provider: "multi",
+    bbox: [34.45, -118.90, 33.65, -117.60],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Los Angeles Rail", label: "Transitous GTFS-RT" }
     ]
   }
 ];
@@ -380,7 +404,7 @@ function parseGtfsRealtime(buffer, city, fallbackLine) {
   try {
     feed = GtfsRealtime.FeedMessage.decode(new Uint8Array(buffer));
   } catch {
-    return [];
+    throw new Error("Invalid GTFS-RT protobuf payload");
   }
 
   const entities = Array.isArray(feed?.entity) ? feed.entity : [];
