@@ -21,42 +21,37 @@ body {
 }
 
 .topbar {
-  min-height: 78px;
+  min-height: 62px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 8px 20px;
+  padding: 6px 16px;
   background: #000;
   color: #fff;
 }
 
+.brand-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .brand {
   font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: lowercase;
 }
 
-.topbar-right {
+.timebar {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.time-weather {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  font-size: 0.85rem;
-}
-
-.timebar,
-.weatherbar {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+  font-size: 0.8rem;
   color: #dcdcdc;
 }
 
@@ -75,6 +70,9 @@ body {
   align-items: center;
   gap: 10px;
   font-size: 0.9rem;
+  position: relative;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .controls label {
@@ -96,10 +94,45 @@ body {
   cursor: pointer;
 }
 
+.weather-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(350px, calc(100vw - 32px));
+  border: 1px solid #2f2f2f;
+  background: #0f0f0f;
+  border-radius: 8px;
+  padding: 12px;
+  z-index: 500;
+  display: grid;
+  gap: 10px;
+}
+
+.weather-popover h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+#weatherSummary {
+  margin: 0;
+  color: #e3e3e3;
+  font-size: 0.9rem;
+}
+
+.weather-city-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.86rem;
+  color: #d8d8d8;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
-  height: calc(100% - 78px);
+  height: calc(100% - 62px);
 }
 
 #map {
@@ -151,13 +184,8 @@ body {
     align-items: flex-start;
   }
 
-  .topbar-right {
-    width: 100%;
-    align-items: flex-end;
-  }
-
   .controls {
-    flex-wrap: wrap;
+    width: 100%;
     justify-content: flex-end;
   }
 }
@@ -166,11 +194,11 @@ body {
   .layout {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr) 280px;
-    height: calc(100% - 108px);
+    height: calc(100% - 120px);
   }
 
   .topbar {
-    min-height: 108px;
+    min-height: 120px;
   }
 
   .panel {
