@@ -11,6 +11,8 @@ const CITIES = [
   { id: "boston", name: "Boston", center: [42.3601, -71.0589], zoom: 10, bbox: [42.58, -71.35, 42.17, -70.85], provider: "multi", timezone: "America/New_York" },
   { id: "philadelphia", name: "Philadelphia", center: [39.9526, -75.1652], zoom: 10, bbox: [40.08, -75.35, 39.83, -74.95], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
   { id: "bay-area", name: "Bay Area", center: [37.8044, -122.2712], zoom: 10, bbox: [38.10, -122.75, 37.20, -121.60], provider: "multi", timezone: "America/Los_Angeles" },
+  { id: "seattle", name: "Seattle", center: [47.6062, -122.3321], zoom: 10, bbox: [47.90, -122.55, 47.35, -121.95], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Los_Angeles" },
+  { id: "atlanta", name: "Atlanta", center: [33.7490, -84.3880], zoom: 10, bbox: [34.15, -84.70, 33.40, -83.95], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
   { id: "denver", name: "Denver", center: [39.7392, -104.9903], zoom: 10, bbox: [40.10, -105.30, 39.55, -104.70], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Denver" },
   { id: "chicago", name: "Chicago", center: [41.8781, -87.6298], zoom: 10, bbox: [42.15, -88.10, 41.60, -87.45], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" }
 ];
@@ -20,6 +22,7 @@ const cityOptions = document.getElementById("cityOptions");
 const citySelect = document.getElementById("citySelect");
 const snapshotSelect = document.getElementById("snapshotSelect");
 const refreshBtn = document.getElementById("refreshBtn");
+const weatherMenu = document.getElementById("weatherMenu");
 const weatherMenuBtn = document.getElementById("weatherMenuBtn");
 const weatherPopover = document.getElementById("weatherPopover");
 const weatherCloseBtn = document.getElementById("weatherCloseBtn");
@@ -453,18 +456,25 @@ refreshBtn.addEventListener("click", () => {
   loadCity(currentCity.id);
 });
 
-weatherMenuBtn.addEventListener("click", () => {
-  setWeatherPopoverOpen(weatherPopover.hidden);
+weatherMenu.addEventListener("mouseenter", () => {
+  setWeatherPopoverOpen(true);
 });
 
-weatherCloseBtn.addEventListener("click", () => {
+weatherMenu.addEventListener("mouseleave", () => {
   setWeatherPopoverOpen(false);
 });
 
-document.addEventListener("click", (event) => {
-  if (weatherPopover.hidden) return;
-  const target = event.target;
-  if (weatherPopover.contains(target) || weatherMenuBtn.contains(target)) return;
+weatherMenu.addEventListener("focusin", () => {
+  setWeatherPopoverOpen(true);
+});
+
+weatherMenu.addEventListener("focusout", (event) => {
+  const next = event.relatedTarget;
+  if (next && weatherMenu.contains(next)) return;
+  setWeatherPopoverOpen(false);
+});
+
+weatherCloseBtn.addEventListener("click", () => {
   setWeatherPopoverOpen(false);
 });
 
@@ -491,6 +501,7 @@ setInterval(() => {
 setInterval(updateTimeBar, 1000);
 
 loadCity("washington-dc");
+setWeatherPopoverOpen(false);
 updateTempToggleLabel();
 updateTimeBar();
 
