@@ -22,17 +22,11 @@ const cityOptions = document.getElementById("cityOptions");
 const citySelect = document.getElementById("citySelect");
 const snapshotSelect = document.getElementById("snapshotSelect");
 const refreshBtn = document.getElementById("refreshBtn");
-const weatherMenu = document.getElementById("weatherMenu");
-const weatherMenuBtn = document.getElementById("weatherMenuBtn");
-const weatherPopover = document.getElementById("weatherPopover");
-const weatherCloseBtn = document.getElementById("weatherCloseBtn");
 const statusEl = document.getElementById("status");
 const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
 const utcTimeEl = document.getElementById("utcTime");
 const localTimeEl = document.getElementById("localTime");
-const weatherEl = document.getElementById("weatherSummary");
-const tempUnitToggleBtn = document.getElementById("tempUnitToggle");
 
 const map = L.map("map", { zoomControl: true }).setView([38.9072, -77.0369], 10);
 
@@ -43,7 +37,6 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 const markerLayer = L.layerGroup().addTo(map);
 const historyByCity = new Map();
-const weatherByCity = new Map();
 let currentCity = CITIES[0];
 const API_PROXY_PATH = "/api/trains";
 const AMTRAKER_ENDPOINTS = [
@@ -52,19 +45,8 @@ const AMTRAKER_ENDPOINTS = [
 ];
 const LIVE_REFRESH_INTERVAL_MS = 30000;
 const LIVE_ANIMATION_DURATION_MS = 7000;
-const WEATHER_TTL_MS = 5 * 60 * 1000;
-const CELSIUS_TO_FAHRENHEIT_SCALE = 9 / 5;
-const CELSIUS_TO_FAHRENHEIT_OFFSET = 32;
-const OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast";
-const OPEN_METEO_CURRENT_FIELDS = "temperature_2m,weather_code,wind_speed_10m";
 const liveMarkers = new Map();
 let activeAnimationFrame = null;
-let weatherRequestToken = 0;
-let weatherMenuCloseTimeout = null;
-let temperatureUnit = readCookie("mtro_temp_unit");
-if (temperatureUnit !== "c" && temperatureUnit !== "f") {
-  temperatureUnit = "f";
-}
 
 for (const city of CITIES) {
   const option = document.createElement("option");
@@ -86,21 +68,6 @@ function escapeHtml(text) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function readCookie(name) {
-  const prefix = `${name}=`;
-  for (const part of document.cookie.split(";")) {
-    const entry = part.trim();
-    if (entry.startsWith(prefix)) {
-      return decodeURIComponent(entry.slice(prefix.length));
-    }
-  }
-  return "";
-}
-
-function writeCookie(name, value, maxAgeSeconds) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
 }
 
 function inBbox(lat, lon, bbox) {
@@ -321,84 +288,6 @@ function updateTimeBar() {
   localTimeEl.textContent = `${currentCity.name} ${local} (${tzLabel})`;
 }
 
-function weatherCodeLabel(code) {
-  if (code === 0) return "Clear";
-  if ([1, 2, 3].includes(code)) return "Partly cloudy";
-  if ([45, 48].includes(code)) return "Fog";
-  if ([51, 53, 55, 56, 57].includes(code)) return "Drizzle";
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Rain";
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
-  if ([95, 96, 99].includes(code)) return "Thunderstorm";
-  return "Weather";
-}
-
-function formatTemperature(tempCelsius) {
-  if (!Number.isFinite(tempCelsius)) return "N/A";
-  const cookieUnit = readCookie("mtro_temp_unit");
-  if (cookieUnit === "c" || cookieUnit === "f") {
-    temperatureUnit = cookieUnit;
-  }
-  if (temperatureUnit === "f") {
-    const tempF = tempCelsius * CELSIUS_TO_FAHRENHEIT_SCALE + CELSIUS_TO_FAHRENHEIT_OFFSET;
-    return `${tempF.toFixed(1)} °F`;
-  }
-  return `${tempCelsius.toFixed(1)} °C`;
-}
-
-function renderWeather(weatherData) {
-  if (!weatherData) {
-    weatherEl.textContent = "Weather unavailable";
-    return;
-  }
-  const label = weatherCodeLabel(weatherData.weatherCode);
-  const temp = formatTemperature(weatherData.tempCelsius);
-  const wind = Number.isFinite(weatherData.windKmh) ? ` · Wind ${Math.round(weatherData.windKmh)} km/h` : "";
-  weatherEl.textContent = `Weather: ${label} · ${temp}${wind}`;
-}
-
-function updateTempToggleLabel() {
-  tempUnitToggleBtn.textContent = temperatureUnit === "f" ? "Show °C" : "Show °F";
-}
-
-function setWeatherPopoverOpen(open) {
-  weatherPopover.hidden = !open;
-  weatherMenuBtn.setAttribute("aria-expanded", open ? "true" : "false");
-}
-
-async function loadWeather(city) {
-  const cached = weatherByCity.get(city.id);
-  if (cached && Date.now() - cached.timestamp < WEATHER_TTL_MS) {
-    renderWeather(cached.data);
-    return;
-  }
-
-  const token = ++weatherRequestToken;
-  weatherEl.textContent = "Loading weather…";
-
-  try {
-    const [lat, lon] = city.center;
-    const weatherUrl = `${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&current=${encodeURIComponent(OPEN_METEO_CURRENT_FIELDS)}&timezone=${city.timezone}`;
-    const response = await fetch(weatherUrl, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
-    const data = await response.json();
-    const current = data?.current || {};
-    const weatherData = {
-      tempCelsius: Number(current.temperature_2m),
-      weatherCode: Number(current.weather_code),
-      windKmh: Number(current.wind_speed_10m)
-    };
-
-    weatherByCity.set(city.id, { timestamp: Date.now(), data: weatherData });
-    if (token === weatherRequestToken) {
-      renderWeather(weatherData);
-    }
-  } catch {
-    if (token === weatherRequestToken) {
-      weatherEl.textContent = "Weather unavailable";
-    }
-  }
-}
-
 async function loadCity(cityId) {
   const city = CITIES.find((entry) => entry.id === cityId) || CITIES[0];
   currentCity = city;
@@ -407,7 +296,6 @@ async function loadCity(cityId) {
   panelTitle.textContent = `${city.name} Trains`;
   statusEl.textContent = "Loading…";
   updateTimeBar();
-  loadWeather(city);
 
   try {
     const result = await fetchCityTrains(city);
@@ -457,53 +345,6 @@ refreshBtn.addEventListener("click", () => {
   loadCity(currentCity.id);
 });
 
-weatherMenu.addEventListener("mouseenter", () => {
-  if (weatherMenuCloseTimeout) {
-    clearTimeout(weatherMenuCloseTimeout);
-    weatherMenuCloseTimeout = null;
-  }
-  setWeatherPopoverOpen(true);
-});
-
-weatherMenu.addEventListener("mouseleave", () => {
-  setWeatherPopoverOpen(false);
-});
-
-weatherMenu.addEventListener("focusin", () => {
-  if (weatherMenuCloseTimeout) {
-    clearTimeout(weatherMenuCloseTimeout);
-    weatherMenuCloseTimeout = null;
-  }
-  setWeatherPopoverOpen(true);
-});
-
-weatherMenu.addEventListener("focusout", (event) => {
-  const next = event.relatedTarget;
-  if (next && weatherMenu.contains(next)) return;
-  weatherMenuCloseTimeout = setTimeout(() => {
-    setWeatherPopoverOpen(false);
-    weatherMenuCloseTimeout = null;
-  }, 120);
-});
-
-weatherCloseBtn.addEventListener("click", () => {
-  setWeatherPopoverOpen(false);
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !weatherPopover.hidden) {
-    setWeatherPopoverOpen(false);
-  }
-});
-
-tempUnitToggleBtn.addEventListener("click", () => {
-  temperatureUnit = temperatureUnit === "f" ? "c" : "f";
-  writeCookie("mtro_temp_unit", temperatureUnit, 60 * 60 * 24 * 365);
-  updateTempToggleLabel();
-  const cached = weatherByCity.get(currentCity.id);
-  renderWeather(cached?.data || null);
-});
-
 setInterval(() => {
   if (snapshotSelect.value === "live") {
     loadCity(currentCity.id);
@@ -513,8 +354,6 @@ setInterval(() => {
 setInterval(updateTimeBar, 1000);
 
 loadCity("washington-dc");
-setWeatherPopoverOpen(false);
-updateTempToggleLabel();
 updateTimeBar();
 
 function renderTrains(trains, timestamp = null) {

@@ -59,16 +59,6 @@ body {
   color: #dcdcdc;
 }
 
-#tempUnitToggle {
-  border: 1px solid #3a3a3a;
-  background: #101010;
-  color: #fff;
-  height: 28px;
-  border-radius: 4px;
-  padding: 0 8px;
-  cursor: pointer;
-}
-
 .controls {
   display: flex;
   align-items: center;
@@ -94,59 +84,6 @@ body {
 
 .controls button {
   cursor: pointer;
-}
-
-#weatherMenuBtn {
-  width: 34px;
-  min-width: 34px;
-  padding: 0;
-  font-size: 0.9rem;
-  line-height: 1;
-}
-
-.weather-menu {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.weather-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: min(280px, calc(100vw - 32px));
-  border: 1px solid #3a3a3a;
-  background: #101010;
-  border-radius: 6px;
-  padding: 10px;
-  z-index: 500;
-  display: grid;
-  gap: 10px;
-}
-
-.weather-popover-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.weather-popover h2 {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-#weatherSummary {
-  margin: 0;
-  color: #dcdcdc;
-  font-size: 0.9rem;
-}
-
-#weatherCloseBtn {
-  width: 26px;
-  min-width: 26px;
-  height: 26px;
-  padding: 0;
-  line-height: 1;
 }
 
 .layout {
