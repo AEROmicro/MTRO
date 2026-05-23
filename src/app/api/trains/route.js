@@ -13,10 +13,10 @@ const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v1/trains"
 ];
 const BART_ENDPOINTS = [
-  `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  `https://api.bart.gov/gtfsrt/vehicles.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
   "https://api.bart.gov/gtfsrt/vehiclepositions.aspx",
-  "https://api.bart.gov/gtfsrt/vehicles.pb"
+  "https://api.bart.gov/gtfsrt/vehicles.pb",
+  `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  `https://api.bart.gov/gtfsrt/vehicles.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`
 ];
 const VRE_ENDPOINTS = ["https://www.vre.org/gtfs-rt/vehiclepositions"];
 const RTD_ENDPOINTS = ["https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb"];
@@ -134,6 +134,24 @@ const CITIES = [
       { provider: "gtfsrt-protobuf", endpoints: RTD_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "seattle",
+    provider: "multi",
+    bbox: [47.90, -122.55, 47.45, -122.10],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Seattle Rail", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "atlanta",
+    provider: "multi",
+    bbox: [34.20, -84.70, 33.40, -83.90],
+    sources: [
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Atlanta Rail", label: "Transitous GTFS-RT" }
     ]
   },
   {
@@ -286,7 +304,7 @@ function parseGtfsRealtime(buffer, city, fallbackLine) {
   try {
     feed = GtfsRealtime.FeedMessage.decode(new Uint8Array(buffer));
   } catch {
-    return [];
+    return null;
   }
 
   const entities = Array.isArray(feed?.entity) ? feed.entity : [];
@@ -388,8 +406,17 @@ async function loadSourceData(city, source) {
   }
 
   if (source.provider === "gtfsrt-protobuf") {
-    const buffer = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).arrayBuffer());
-    return parseGtfsRealtime(buffer, city, source.fallbackLine || city.id);
+    let lastError;
+    for (const url of endpoints) {
+      try {
+        const buffer = await (await fetchWithTimeout(url, requestInit)).arrayBuffer();
+        const parsed = parseGtfsRealtime(buffer, city, source.fallbackLine || city.id);
+        if (parsed) return parsed;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error("No valid GTFS-RT protobuf feed available");
   }
 
   throw new Error(`Unsupported provider: ${source.provider}`);

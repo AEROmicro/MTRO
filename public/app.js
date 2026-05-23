@@ -12,6 +12,8 @@ const CITIES = [
   { id: "philadelphia", name: "Philadelphia", center: [39.9526, -75.1652], zoom: 10, bbox: [40.08, -75.35, 39.83, -74.95], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
   { id: "bay-area", name: "Bay Area", center: [37.8044, -122.2712], zoom: 10, bbox: [38.10, -122.75, 37.20, -121.60], provider: "multi", timezone: "America/Los_Angeles" },
   { id: "denver", name: "Denver", center: [39.7392, -104.9903], zoom: 10, bbox: [40.10, -105.30, 39.55, -104.70], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Denver" },
+  { id: "seattle", name: "Seattle", center: [47.6062, -122.3321], zoom: 10, bbox: [47.9, -122.55, 47.45, -122.1], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Los_Angeles" },
+  { id: "atlanta", name: "Atlanta", center: [33.7490, -84.3880], zoom: 10, bbox: [34.2, -84.7, 33.4, -83.9], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
   { id: "chicago", name: "Chicago", center: [41.8781, -87.6298], zoom: 10, bbox: [42.15, -88.10, 41.60, -87.45], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" }
 ];
 
@@ -20,6 +22,8 @@ const cityOptions = document.getElementById("cityOptions");
 const citySelect = document.getElementById("citySelect");
 const snapshotSelect = document.getElementById("snapshotSelect");
 const refreshBtn = document.getElementById("refreshBtn");
+const weatherInfoBtn = document.getElementById("weatherInfoBtn");
+const weatherPopover = document.getElementById("weatherPopover");
 const statusEl = document.getElementById("status");
 const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
@@ -27,6 +31,7 @@ const utcTimeEl = document.getElementById("utcTime");
 const localTimeEl = document.getElementById("localTime");
 const weatherEl = document.getElementById("weatherSummary");
 const tempUnitToggleBtn = document.getElementById("tempUnitToggle");
+const weatherCityListEl = document.getElementById("weatherCityList");
 
 const map = L.map("map", { zoomControl: true }).setView([38.9072, -77.0369], 10);
 
@@ -51,6 +56,7 @@ const CELSIUS_TO_FAHRENHEIT_SCALE = 9 / 5;
 const CELSIUS_TO_FAHRENHEIT_OFFSET = 32;
 const OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast";
 const OPEN_METEO_CURRENT_FIELDS = "temperature_2m,weather_code,wind_speed_10m";
+const WEATHER_INFO_CITY_IDS = ["boston", "denver", "seattle", "atlanta"];
 const liveMarkers = new Map();
 let activeAnimationFrame = null;
 let weatherRequestToken = 0;
@@ -338,15 +344,16 @@ function formatTemperature(tempCelsius) {
   return `${tempCelsius.toFixed(1)} °C`;
 }
 
-function renderWeather(weatherData) {
-  if (!weatherData) {
-    weatherEl.textContent = "Weather unavailable";
-    return;
-  }
+function weatherSummaryText(weatherData) {
+  if (!weatherData) return "Weather unavailable";
   const label = weatherCodeLabel(weatherData.weatherCode);
   const temp = formatTemperature(weatherData.tempCelsius);
   const wind = Number.isFinite(weatherData.windKmh) ? ` · Wind ${Math.round(weatherData.windKmh)} km/h` : "";
-  weatherEl.textContent = `Weather: ${label} · ${temp}${wind}`;
+  return `${label} · ${temp}${wind}`;
+}
+
+function renderWeather(weatherData) {
+  weatherEl.textContent = `Current (${currentCity.name}): ${weatherSummaryText(weatherData)}`;
 }
 
 function updateTempToggleLabel() {
@@ -354,29 +361,11 @@ function updateTempToggleLabel() {
 }
 
 async function loadWeather(city) {
-  const cached = weatherByCity.get(city.id);
-  if (cached && Date.now() - cached.timestamp < WEATHER_TTL_MS) {
-    renderWeather(cached.data);
-    return;
-  }
-
   const token = ++weatherRequestToken;
   weatherEl.textContent = "Loading weather…";
 
   try {
-    const [lat, lon] = city.center;
-    const weatherUrl = `${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&current=${encodeURIComponent(OPEN_METEO_CURRENT_FIELDS)}&timezone=${city.timezone}`;
-    const response = await fetch(weatherUrl, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
-    const data = await response.json();
-    const current = data?.current || {};
-    const weatherData = {
-      tempCelsius: Number(current.temperature_2m),
-      weatherCode: Number(current.weather_code),
-      windKmh: Number(current.wind_speed_10m)
-    };
-
-    weatherByCity.set(city.id, { timestamp: Date.now(), data: weatherData });
+    const weatherData = await loadWeatherData(city);
     if (token === weatherRequestToken) {
       renderWeather(weatherData);
     }
@@ -385,6 +374,55 @@ async function loadWeather(city) {
       weatherEl.textContent = "Weather unavailable";
     }
   }
+}
+
+async function loadWeatherData(city) {
+  const cached = weatherByCity.get(city.id);
+  if (cached && Date.now() - cached.timestamp < WEATHER_TTL_MS) {
+    return cached.data;
+  }
+
+  const [lat, lon] = city.center;
+  const weatherUrl = `${OPEN_METEO_BASE_URL}?latitude=${lat}&longitude=${lon}&current=${encodeURIComponent(OPEN_METEO_CURRENT_FIELDS)}&timezone=${city.timezone}`;
+  const response = await fetch(weatherUrl, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
+  const data = await response.json();
+  const current = data?.current || {};
+  const weatherData = {
+    tempCelsius: Number(current.temperature_2m),
+    weatherCode: Number(current.weather_code),
+    windKmh: Number(current.wind_speed_10m)
+  };
+  weatherByCity.set(city.id, { timestamp: Date.now(), data: weatherData });
+  return weatherData;
+}
+
+async function refreshWeatherPopover() {
+  if (!weatherCityListEl) return;
+  const cities = WEATHER_INFO_CITY_IDS
+    .map((id) => CITIES.find((city) => city.id === id))
+    .filter(Boolean);
+
+  weatherCityListEl.textContent = "";
+  await Promise.all(cities.map(async (city) => {
+    const item = document.createElement("li");
+    item.textContent = `${city.name}: Loading weather…`;
+    weatherCityListEl.append(item);
+
+    try {
+      const weatherData = await loadWeatherData(city);
+      item.textContent = `${city.name}: ${weatherSummaryText(weatherData)}`;
+    } catch {
+      item.textContent = `${city.name}: Weather unavailable`;
+    }
+  }));
+}
+
+function setWeatherPopoverOpen(open) {
+  if (!weatherPopover || !weatherInfoBtn) return;
+  weatherPopover.hidden = !open;
+  weatherInfoBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (open) refreshWeatherPopover();
 }
 
 async function loadCity(cityId) {
@@ -445,12 +483,24 @@ refreshBtn.addEventListener("click", () => {
   loadCity(currentCity.id);
 });
 
+weatherInfoBtn.addEventListener("click", () => {
+  setWeatherPopoverOpen(weatherPopover.hidden);
+});
+
+document.addEventListener("click", (event) => {
+  if (weatherPopover.hidden) return;
+  const target = event.target;
+  if (weatherPopover.contains(target) || weatherInfoBtn.contains(target)) return;
+  setWeatherPopoverOpen(false);
+});
+
 tempUnitToggleBtn.addEventListener("click", () => {
   temperatureUnit = temperatureUnit === "f" ? "c" : "f";
   writeCookie("mtro_temp_unit", temperatureUnit, 60 * 60 * 24 * 365);
   updateTempToggleLabel();
   const cached = weatherByCity.get(currentCity.id);
   renderWeather(cached?.data || null);
+  if (!weatherPopover.hidden) refreshWeatherPopover();
 });
 
 setInterval(() => {
