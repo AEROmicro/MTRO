@@ -9,31 +9,32 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">MTRO</div>
-      <div class="topbar-right">
-        <div class="time-weather" aria-live="polite">
-          <div class="timebar">
-            <span id="utcTime">UTC --:--:--</span>
-            <span id="localTime">Local --:--:--</span>
-          </div>
-          <div class="weatherbar">
-            <span id="weatherSummary">Weather unavailable</span>
-            <button id="tempUnitToggle" type="button">Show °C</button>
-          </div>
+      <div class="brand-stack" aria-live="polite">
+        <div class="brand">mtro</div>
+        <div class="timebar">
+          <span id="utcTime">UTC --:--:--</span>
+          <span id="localTime">Local --:--:--</span>
         </div>
-        <nav class="controls" aria-label="Train filter controls">
-          <label for="citySearch">Search</label>
-          <input id="citySearch" list="cityOptions" type="search" placeholder="Search city" autocomplete="off" />
-          <datalist id="cityOptions"></datalist>
-          <label for="citySelect">City</label>
-          <select id="citySelect"></select>
-          <label for="snapshotSelect">Time</label>
-          <select id="snapshotSelect">
-            <option value="live">Live</option>
-          </select>
-          <button id="refreshBtn" type="button">Refresh</button>
-        </nav>
       </div>
+      <nav class="controls" aria-label="Train filter controls">
+        <label for="citySearch">Search</label>
+        <input id="citySearch" list="cityOptions" type="search" placeholder="Search city" autocomplete="off" />
+        <datalist id="cityOptions"></datalist>
+        <label for="citySelect">City</label>
+        <select id="citySelect"></select>
+        <label for="snapshotSelect">Time</label>
+        <select id="snapshotSelect">
+          <option value="live">Live</option>
+        </select>
+        <button id="refreshBtn" type="button">Refresh</button>
+        <button id="weatherInfoBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="weatherPopover">More info</button>
+        <section id="weatherPopover" class="weather-popover" hidden>
+          <h2>Weather details</h2>
+          <p id="weatherSummary">Weather unavailable</p>
+          <button id="tempUnitToggle" type="button">Show °C</button>
+          <ul id="weatherCityList" class="weather-city-list"></ul>
+        </section>
+      </nav>
     </header>
 
     <main class="layout">

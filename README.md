@@ -37,7 +37,7 @@ Requires Node.js 22+ (for `gtfs-realtime-bindings`).
 - City weather summary with Celsius/Fahrenheit toggle persisted via cookie (`mtro_temp_unit`)
 - In-session past-data snapshots for quick playback
 - Shared server-side city response caching to reduce duplicate upstream requests
-- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Denver; and Chicago
+- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Denver; Seattle; Atlanta; and Chicago
 - Multi-source API coverage for these cities including:
   - VRE GTFS-RT (Washington, DC area commuter rail)
   - MBTA vehicles API (Boston)
