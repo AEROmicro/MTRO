@@ -4,6 +4,11 @@ import gtfsRealtimeBindings from "gtfs-realtime-bindings";
 
 const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
 
+/**
+ * Parse API keys from one or more env-style inputs and return unique values.
+ * @param {...string} rawValues Comma/whitespace separated key strings.
+ * @returns {string[]} Unique, trimmed API keys.
+ */
 function parseApiKeys(...rawValues) {
   return [...new Set(
     rawValues
@@ -92,9 +97,9 @@ const HOUSTON_METRO_SOURCE_BASE = {
   fallbackLine: "METRO",
   label: "METRO GTFS Realtime"
 };
-const HOUSTON_METRO_SOURCES = [
-  HOUSTON_METRO_SOURCE_BASE,
-  ...HOUSTON_METRO_API_KEYS.flatMap((key) => ([
+const HOUSTON_METRO_SOURCES = (HOUSTON_METRO_API_KEYS.length ? HOUSTON_METRO_API_KEYS : [null]).flatMap((key) => {
+  if (!key) return [HOUSTON_METRO_SOURCE_BASE];
+  return [
     {
       ...HOUSTON_METRO_SOURCE_BASE,
       headers: { "Ocp-Apim-Subscription-Key": key }
@@ -103,8 +108,8 @@ const HOUSTON_METRO_SOURCES = [
       ...HOUSTON_METRO_SOURCE_BASE,
       headers: { api_key: key }
     }
-  ]))
-];
+  ];
+});
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
