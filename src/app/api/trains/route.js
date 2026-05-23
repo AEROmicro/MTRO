@@ -13,10 +13,20 @@ const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v1/trains"
 ];
 const BART_ENDPOINTS = [
+  "https://api.bart.gov/gtfsrt/vehicles",
+  "https://api.bart.gov/gtfsrt/vehiclepositions",
   `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
   `https://api.bart.gov/gtfsrt/vehicles.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
   "https://api.bart.gov/gtfsrt/vehiclepositions.aspx",
   "https://api.bart.gov/gtfsrt/vehicles.pb"
+];
+const SOUND_TRANSIT_ENDPOINTS = [
+  "https://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb",
+  "http://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb"
+];
+const MARTA_ENDPOINTS = [
+  "https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/vehicle",
+  "https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/Vehicle/VehiclePositions.pb"
 ];
 const VRE_ENDPOINTS = ["https://www.vre.org/gtfs-rt/vehiclepositions"];
 const RTD_ENDPOINTS = ["https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb"];
@@ -124,6 +134,36 @@ const CITIES = [
       },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "seattle",
+    provider: "multi",
+    bbox: [47.90, -122.55, 47.35, -121.95],
+    sources: [
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: SOUND_TRANSIT_ENDPOINTS,
+        fallbackLine: "Sound Transit",
+        label: "Sound Transit GTFS-RT"
+      },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Seattle Rail", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "atlanta",
+    provider: "multi",
+    bbox: [34.15, -84.70, 33.40, -83.95],
+    sources: [
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MARTA_ENDPOINTS,
+        fallbackLine: "MARTA",
+        label: "MARTA GTFS-RT"
+      },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Atlanta Rail", label: "Transitous GTFS-RT" }
     ]
   },
   {
