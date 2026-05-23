@@ -21,6 +21,17 @@ npm run dev
 
 Requires Node.js 22+ (for `gtfs-realtime-bindings`).
 
+## Private API keys
+
+Store keys in environment variables instead of committing them:
+
+- `WMATA_API_KEYS` (comma-separated) or `WMATA_API_KEY`
+- `METRA_API_KEYS` (comma-separated) or `METRA_API_KEY`
+- `HOUSTON_METRO_API_KEYS` (comma-separated) or `HOUSTON_METRO_API_KEY`
+
+For local development, use `.env.local` (already git-ignored).
+For deployed environments, set these as platform secrets (for example, in Vercel/Cloudflare project settings) so only project admins can view/manage them.
+
 ## Cloudflare deployment
 
 - The app uses a same-origin Next.js API route at `/api/trains`.
