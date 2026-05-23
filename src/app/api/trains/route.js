@@ -21,8 +21,7 @@ const BART_ENDPOINTS = [
   "https://api.bart.gov/gtfsrt/vehicles.pb"
 ];
 const SOUND_TRANSIT_ENDPOINTS = [
-  "https://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb",
-  "http://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb"
+  "https://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb"
 ];
 const MARTA_ENDPOINTS = [
   "https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/vehicle",

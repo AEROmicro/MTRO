@@ -60,6 +60,7 @@ const OPEN_METEO_CURRENT_FIELDS = "temperature_2m,weather_code,wind_speed_10m";
 const liveMarkers = new Map();
 let activeAnimationFrame = null;
 let weatherRequestToken = 0;
+let weatherMenuCloseTimeout = null;
 let temperatureUnit = readCookie("mtro_temp_unit");
 if (temperatureUnit !== "c" && temperatureUnit !== "f") {
   temperatureUnit = "f";
@@ -457,6 +458,10 @@ refreshBtn.addEventListener("click", () => {
 });
 
 weatherMenu.addEventListener("mouseenter", () => {
+  if (weatherMenuCloseTimeout) {
+    clearTimeout(weatherMenuCloseTimeout);
+    weatherMenuCloseTimeout = null;
+  }
   setWeatherPopoverOpen(true);
 });
 
@@ -465,13 +470,20 @@ weatherMenu.addEventListener("mouseleave", () => {
 });
 
 weatherMenu.addEventListener("focusin", () => {
+  if (weatherMenuCloseTimeout) {
+    clearTimeout(weatherMenuCloseTimeout);
+    weatherMenuCloseTimeout = null;
+  }
   setWeatherPopoverOpen(true);
 });
 
 weatherMenu.addEventListener("focusout", (event) => {
   const next = event.relatedTarget;
   if (next && weatherMenu.contains(next)) return;
-  setWeatherPopoverOpen(false);
+  weatherMenuCloseTimeout = setTimeout(() => {
+    setWeatherPopoverOpen(false);
+    weatherMenuCloseTimeout = null;
+  }, 120);
 });
 
 weatherCloseBtn.addEventListener("click", () => {
