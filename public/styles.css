@@ -104,6 +104,12 @@ body {
   line-height: 1;
 }
 
+.weather-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .weather-popover {
   position: absolute;
   top: calc(100% + 8px);
