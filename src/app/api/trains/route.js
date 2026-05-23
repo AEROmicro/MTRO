@@ -86,26 +86,21 @@ const HOUSTON_METRO_ENDPOINTS = [
   "https://api.ridemetro.org/api/gtfs/vehiclepositions",
   "https://api.ridemetro.org/api/gtfs/vehiclepositions/"
 ];
+const HOUSTON_METRO_SOURCE_BASE = {
+  provider: "gtfsrt-protobuf",
+  endpoints: HOUSTON_METRO_ENDPOINTS,
+  fallbackLine: "METRO",
+  label: "METRO GTFS Realtime"
+};
 const HOUSTON_METRO_SOURCES = [
-  {
-    provider: "gtfsrt-protobuf",
-    endpoints: HOUSTON_METRO_ENDPOINTS,
-    fallbackLine: "METRO",
-    label: "METRO GTFS Realtime"
-  },
+  HOUSTON_METRO_SOURCE_BASE,
   ...HOUSTON_METRO_API_KEYS.flatMap((key) => ([
     {
-      provider: "gtfsrt-protobuf",
-      endpoints: HOUSTON_METRO_ENDPOINTS,
-      fallbackLine: "METRO",
-      label: "METRO GTFS Realtime",
+      ...HOUSTON_METRO_SOURCE_BASE,
       headers: { "Ocp-Apim-Subscription-Key": key }
     },
     {
-      provider: "gtfsrt-protobuf",
-      endpoints: HOUSTON_METRO_ENDPOINTS,
-      fallbackLine: "METRO",
-      label: "METRO GTFS Realtime",
+      ...HOUSTON_METRO_SOURCE_BASE,
       headers: { api_key: key }
     }
   ]))
