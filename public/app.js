@@ -353,7 +353,7 @@ function weatherSummaryText(weatherData) {
 }
 
 function renderWeather(weatherData) {
-  weatherEl.textContent = `Current (${currentCity.name}): ${weatherSummaryText(weatherData)}`;
+  weatherEl.textContent = `current (${currentCity.name}): ${weatherSummaryText(weatherData)}`;
 }
 
 function updateTempToggleLabel() {
