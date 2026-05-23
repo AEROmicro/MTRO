@@ -18,6 +18,10 @@ function parseApiKeys(...rawValues) {
   )];
 }
 
+function keysOrNull(keys) {
+  return Array.isArray(keys) && keys.length ? keys : [null];
+}
+
 const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
 const WMATA_API_KEYS = parseApiKeys(
   process.env.WMATA_API_KEYS,
@@ -68,13 +72,13 @@ const WMATA_TRAIN_POSITIONS_ENDPOINTS = [
   "https://api.wmata.com/TrainPositions/TrainPositions?contentType=json",
   "https://api.wmata.com/TrainPositions/TrainPositions"
 ];
-const WMATA_TRAIN_POSITION_SOURCES = (WMATA_API_KEYS.length ? WMATA_API_KEYS : [null]).map((key) => ({
+const WMATA_TRAIN_POSITION_SOURCES = keysOrNull(WMATA_API_KEYS).map((key) => ({
   provider: "wmata-json",
   endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
   label: "WMATA TrainPositions",
   headers: key ? { api_key: key } : undefined
 }));
-const WMATA_RAIL_SOURCES = (WMATA_API_KEYS.length ? WMATA_API_KEYS : [null]).map((key) => ({
+const WMATA_RAIL_SOURCES = keysOrNull(WMATA_API_KEYS).map((key) => ({
   provider: "gtfsrt-protobuf",
   endpoints: WMATA_RAIL_ENDPOINTS,
   fallbackLine: "WMATA",
@@ -97,13 +101,10 @@ const HOUSTON_METRO_SOURCE_BASE = {
   fallbackLine: "METRO",
   label: "METRO GTFS Realtime"
 };
-const HOUSTON_METRO_SOURCES = (HOUSTON_METRO_API_KEYS.length ? HOUSTON_METRO_API_KEYS : [null]).flatMap((key) => {
-  if (!key) return [HOUSTON_METRO_SOURCE_BASE];
-  return [{
-    ...HOUSTON_METRO_SOURCE_BASE,
-    headers: { "Ocp-Apim-Subscription-Key": key }
-  }];
-});
+const HOUSTON_METRO_SOURCES = keysOrNull(HOUSTON_METRO_API_KEYS).map((key) => ({
+  ...HOUSTON_METRO_SOURCE_BASE,
+  headers: key ? { "Ocp-Apim-Subscription-Key": key } : undefined
+}));
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
