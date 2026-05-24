@@ -139,6 +139,11 @@ const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
 ];
+const MTA_BUS_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mta-bus",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mta-bus%2Fgtfs",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mta-bus/gtfs"
+];
 const MTA_LIRR_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr%2Fgtfs-lirr",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr/gtfs-lirr"
@@ -196,6 +201,14 @@ const CITIES = [
         endpoints: MTA_NYCT_ENDPOINTS,
         fallbackLine: "MTA Subway",
         label: "MTA NYCT GTFS-RT",
+        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_BUS_ENDPOINTS,
+        fallbackLine: "MTA Bus",
+        label: "MTA Bus GTFS-RT",
+        defaultType: "bus",
         headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
       },
       {

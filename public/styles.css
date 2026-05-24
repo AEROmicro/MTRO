@@ -119,6 +119,34 @@ body {
   margin-bottom: 14px;
 }
 
+.legend {
+  margin-bottom: 14px;
+}
+
+.mode-legend {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.mode-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.mode-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
 .train-list {
   list-style: none;
   margin: 0;
