@@ -138,13 +138,15 @@ const TRANSITOUS_ENDPOINTS = [
   "https://api.transitous.org/gtfs-rt",
   "https://transitous.org/gtfs-rt/"
 ];
+const NEXTBUS_BASE_URL = "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=";
+const nextBusUrl = (agencyTag) => `${NEXTBUS_BASE_URL}${encodeURIComponent(agencyTag)}&t=0`;
 const NEXTBUS_ENDPOINTS = {
-  dcCirculator: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=dc-circulator&t=0",
-  mbta: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=mbta&t=0",
-  septa: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=septa&t=0",
-  sfmuni: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&t=0",
-  cta: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=cta&t=0",
-  laMetro: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=lametro&t=0"
+  dcCirculator: nextBusUrl("dc-circulator"),
+  mbta: nextBusUrl("mbta"),
+  septa: nextBusUrl("septa"),
+  sfmuni: nextBusUrl("sf-muni"),
+  cta: nextBusUrl("cta"),
+  laMetro: nextBusUrl("lametro")
 };
 
 const CITIES = [
@@ -330,6 +332,8 @@ const CACHE_TTL_MS = 15000;
 const MIN_STOPPED_THRESHOLD_SECONDS = 15;
 const MS_TO_MPH_FACTOR = 2.23694;
 const MS_TO_KMH_FACTOR = 3.6;
+const KMH_PER_MPH = 1.60934;
+const COORDINATE_PRECISION = 6;
 
 const cityCache = globalThis.__mtroCityCache || new Map();
 const inflightByCity = globalThis.__mtroInflightByCity || new Map();
@@ -489,6 +493,13 @@ function parseGenericGeoJson(data, city, defaultLine) {
     .filter(Boolean);
 }
 
+/**
+ * Parse NextBus vehicleLocations JSON into normalized train rows.
+ * @param {any} data NextBus payload with a top-level `vehicle` array.
+ * @param {{bbox:number[]}} city City config with bounding box filter.
+ * @param {string} defaultLine Fallback route label for missing routeTag values.
+ * @returns {Array<object>} Normalized train-style rows.
+ */
 function parseNextBus(data, city, defaultLine) {
   const rows = Array.isArray(data?.vehicle) ? data.vehicle : [];
   return rows
@@ -497,7 +508,7 @@ function parseNextBus(data, city, defaultLine) {
       const lon = Number(row?.lon);
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
       const speedKmHr = Number(row?.speedKmHr);
-      const speedMph = Number.isFinite(speedKmHr) ? Math.round(speedKmHr / 1.60934) : null;
+      const speedMph = Number.isFinite(speedKmHr) ? Math.round(speedKmHr / KMH_PER_MPH) : null;
       const secsSinceReport = Number(row?.secsSinceReport);
       const status = Number.isFinite(speedMph)
         ? `${speedMph} mph`
@@ -506,7 +517,7 @@ function parseNextBus(data, city, defaultLine) {
           : "Active";
 
       return {
-        id: String(row?.id || `${lat.toFixed(6)},${lon.toFixed(6)},${index}`),
+        id: String(row?.id || `${lat.toFixed(COORDINATE_PRECISION)},${lon.toFixed(COORDINATE_PRECISION)},${index}`),
         line: String(row?.routeTag || defaultLine),
         label: String(row?.id || row?.vehicleLabel || `${index + 1}`),
         status,
