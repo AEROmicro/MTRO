@@ -142,7 +142,7 @@ const NEXTBUS_ENDPOINTS = {
   dcCirculator: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=dc-circulator&t=0",
   mbta: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=mbta&t=0",
   septa: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=septa&t=0",
-  sfMuni: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&t=0",
+  sfmuni: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&t=0",
   cta: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=cta&t=0",
   laMetro: "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=lametro&t=0"
 };
@@ -227,7 +227,7 @@ const CITIES = [
         fallbackLine: "BART",
         label: "BART GTFS-RT"
       },
-      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.sfMuni], fallbackLine: "SF Muni", label: "NextBus SF Muni" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.sfmuni], fallbackLine: "SF Muni", label: "NextBus SF Muni" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -506,7 +506,7 @@ function parseNextBus(data, city, defaultLine) {
           : "Active";
 
       return {
-        id: String(row?.id || `${lat},${lon},${index}`),
+        id: String(row?.id || `${lat.toFixed(6)},${lon.toFixed(6)},${index}`),
         line: String(row?.routeTag || defaultLine),
         label: String(row?.id || row?.vehicleLabel || `${index + 1}`),
         status,
