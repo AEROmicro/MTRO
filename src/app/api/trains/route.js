@@ -40,6 +40,10 @@ const HOUSTON_METRO_API_KEYS = parseApiKeys(
   process.env.HOUSTON_METRO_PRIMARY_KEY,
   process.env.HOUSTON_METRO_SECONDARY_KEY
 );
+const MOBILITY_DATABASE_API_BASE = String(process.env.MOBILITY_DATABASE_API_BASE || "https://api.mobilitydatabase.org").replace(/\/+$/, "");
+const MOBILITY_DATABASE_ACCESS_TOKEN = String(process.env.MOBILITY_DATABASE_ACCESS_TOKEN || "").trim();
+const MOBILITY_DATABASE_REFRESH_TOKEN = String(process.env.MOBILITY_DATABASE_REFRESH_TOKEN || "").trim();
+const MOBILITY_DATABASE_MAX_ENDPOINTS = Math.max(1, Math.min(25, Number(process.env.MOBILITY_DATABASE_MAX_ENDPOINTS) || 6));
 
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
@@ -188,6 +192,38 @@ const DETROIT_DDOT_ENDPOINTS = [
 const UTA_ENDPOINTS = [
   "https://apps.rideuta.com/tms/gtfs/Vehicle"
 ];
+const MOBILITY_DATABASE_CITY_FILTERS = {
+  "washington-dc": { country_code: "US", subdivision_name: "District of Columbia", municipality: "Washington" },
+  "new-york-city": { country_code: "US", subdivision_name: "New York", municipality: "New York" },
+  boston: { country_code: "US", subdivision_name: "Massachusetts", municipality: "Boston" },
+  philadelphia: { country_code: "US", subdivision_name: "Pennsylvania", municipality: "Philadelphia" },
+  "bay-area": { country_code: "US", subdivision_name: "California", municipality: "San Francisco" },
+  seattle: { country_code: "US", subdivision_name: "Washington", municipality: "Seattle" },
+  atlanta: { country_code: "US", subdivision_name: "Georgia", municipality: "Atlanta" },
+  denver: { country_code: "US", subdivision_name: "Colorado", municipality: "Denver" },
+  chicago: { country_code: "US", subdivision_name: "Illinois", municipality: "Chicago" },
+  houston: { country_code: "US", subdivision_name: "Texas", municipality: "Houston" },
+  detroit: { country_code: "US", subdivision_name: "Michigan", municipality: "Detroit" },
+  "salt-lake-city": { country_code: "US", subdivision_name: "Utah", municipality: "Salt Lake City" },
+  milwaukee: { country_code: "US", subdivision_name: "Wisconsin", municipality: "Milwaukee" },
+  "los-angeles": { country_code: "US", subdivision_name: "California", municipality: "Los Angeles" }
+};
+
+function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train") {
+  const locationFilter = MOBILITY_DATABASE_CITY_FILTERS[cityId];
+  if (!locationFilter) return null;
+  return {
+    provider: "mobilitydb-gtfsrt-discovery",
+    label: "Mobility Database GTFS-RT",
+    fallbackLine,
+    defaultType,
+    mobilityDatabase: {
+      ...locationFilter,
+      entity_types: "vp",
+      is_official: true
+    }
+  };
+}
 
 const CITIES = [
   {
@@ -201,6 +237,7 @@ const CITIES = [
       ...WMATA_BUS_SOURCES,
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.dcCirculator], fallbackLine: "DC Circulator", label: "NextBus DC Circulator", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.fairfaxConnector], fallbackLine: "Fairfax Connector", label: "NextBus Fairfax Connector", defaultType: "bus" },
+      createMobilityDatabaseSource("washington-dc", "Washington Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -239,6 +276,7 @@ const CITIES = [
         label: "MTA MNR GTFS-RT",
         headers: MTA_HEADERS
       },
+      createMobilityDatabaseSource("new-york-city", "New York Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -251,6 +289,7 @@ const CITIES = [
       { provider: "mbta-json", endpoints: ["https://api-v3.mbta.com/vehicles"], label: "MBTA" },
       { provider: "gtfsrt-protobuf", endpoints: MBTA_GTFSRT_ENDPOINTS, fallbackLine: "MBTA", label: "MBTA GTFS-RT" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.mbta], fallbackLine: "MBTA", label: "NextBus MBTA" },
+      createMobilityDatabaseSource("boston", "Boston Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -264,6 +303,7 @@ const CITIES = [
       { provider: "gtfsrt-protobuf", endpoints: SEPTA_RAIL_GTFSRT_ENDPOINTS, fallbackLine: "SEPTA Rail", label: "SEPTA Rail GTFS-RT" },
       { provider: "gtfsrt-protobuf", endpoints: SEPTA_BUS_GTFSRT_ENDPOINTS, fallbackLine: "SEPTA", label: "SEPTA GTFS-RT" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.septa], fallbackLine: "SEPTA", label: "NextBus SEPTA" },
+      createMobilityDatabaseSource("philadelphia", "Philadelphia Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -284,6 +324,7 @@ const CITIES = [
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.acTransit], fallbackLine: "AC Transit", label: "NextBus AC Transit", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.vta], fallbackLine: "VTA", label: "NextBus VTA", defaultType: "tram" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.samTrans], fallbackLine: "SamTrans", label: "NextBus SamTrans", defaultType: "bus" },
+      createMobilityDatabaseSource("bay-area", "Bay Area Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -305,6 +346,7 @@ const CITIES = [
         fallbackLine: "Sound Transit",
         label: "Sound Transit GTFS-RT (alt)"
       },
+      createMobilityDatabaseSource("seattle", "Seattle Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Seattle Rail", label: "Transitous GTFS-RT" }
     ]
@@ -320,6 +362,7 @@ const CITIES = [
         fallbackLine: "MARTA",
         label: "MARTA GTFS-RT"
       },
+      createMobilityDatabaseSource("atlanta", "Atlanta Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Atlanta Rail", label: "Transitous GTFS-RT" }
     ]
@@ -331,6 +374,7 @@ const CITIES = [
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: RTD_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT" },
       { provider: "gtfsrt-protobuf", endpoints: RTD_ALT_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT (alt)" },
+      createMobilityDatabaseSource("denver", "Denver Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -343,6 +387,7 @@ const CITIES = [
       { provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.cta], fallbackLine: "CTA", label: "NextBus CTA", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.pace], fallbackLine: "Pace", label: "NextBus Pace", defaultType: "bus" },
+      createMobilityDatabaseSource("chicago", "Chicago Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Chicago Transit", label: "Transitous GTFS-RT" }
     ]
@@ -353,6 +398,7 @@ const CITIES = [
     bbox: [30.20, -95.80, 29.40, -95.00],
     sources: [
       ...HOUSTON_METRO_SOURCES,
+      createMobilityDatabaseSource("houston", "Houston Transit", "bus"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Houston Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
     ]
@@ -363,6 +409,7 @@ const CITIES = [
     bbox: [43.25, -88.20, 42.85, -87.75],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: MCTS_ENDPOINTS, fallbackLine: "MCTS", label: "MCTS GTFS-RT", defaultType: "bus" },
+      createMobilityDatabaseSource("milwaukee", "Milwaukee Transit", "bus"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Milwaukee Rail", label: "Transitous GTFS-RT" }
     ]
@@ -376,6 +423,7 @@ const CITIES = [
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.bigBlueBus], fallbackLine: "Big Blue Bus", label: "NextBus Big Blue Bus", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.culverCityBus], fallbackLine: "Culver CityBus", label: "NextBus Culver CityBus", defaultType: "bus" },
       { provider: "gtfsrt-protobuf", endpoints: LA_METRO_GTFS_ENDPOINTS, fallbackLine: "LA Metro", label: "LA Metro GTFS-RT", defaultType: "tram" },
+      createMobilityDatabaseSource("los-angeles", "Los Angeles Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Los Angeles Transit", label: "Transitous GTFS-RT" }
     ]
@@ -386,6 +434,7 @@ const CITIES = [
     bbox: [42.55, -83.40, 42.20, -82.90],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: DETROIT_DDOT_ENDPOINTS, fallbackLine: "DDOT", label: "DDOT GTFS-RT", defaultType: "bus" },
+      createMobilityDatabaseSource("detroit", "Detroit Transit", "bus"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Detroit Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
     ]
@@ -396,6 +445,7 @@ const CITIES = [
     bbox: [40.92, -112.20, 40.45, -111.70],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: UTA_ENDPOINTS, fallbackLine: "UTA", label: "UTA GTFS-RT", defaultType: "tram" },
+      createMobilityDatabaseSource("salt-lake-city", "Salt Lake Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Salt Lake Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
     ]
@@ -416,9 +466,11 @@ const COORDINATE_PRECISION = 6;
 
 const cityCache = globalThis.__mtroCityCache || new Map();
 const inflightByCity = globalThis.__mtroInflightByCity || new Map();
+const mobilityDatabaseTokenState = globalThis.__mtroMobilityDatabaseTokenState || { token: null, expiresAt: 0 };
 
 globalThis.__mtroCityCache = cityCache;
 globalThis.__mtroInflightByCity = inflightByCity;
+globalThis.__mtroMobilityDatabaseTokenState = mobilityDatabaseTokenState;
 
 function inBbox(lat, lon, bbox) {
   return lat <= bbox[0] && lon >= bbox[1] && lat >= bbox[2] && lon <= bbox[3];
@@ -752,6 +804,68 @@ async function fetchFirst(urls, fetcher) {
   throw lastError || new Error("No data source available");
 }
 
+async function getMobilityDatabaseAccessToken() {
+  if (MOBILITY_DATABASE_ACCESS_TOKEN) return MOBILITY_DATABASE_ACCESS_TOKEN;
+  const now = Date.now();
+  if (mobilityDatabaseTokenState.token && mobilityDatabaseTokenState.expiresAt > now + 15000) {
+    return mobilityDatabaseTokenState.token;
+  }
+  if (!MOBILITY_DATABASE_REFRESH_TOKEN) return null;
+
+  const response = await fetchWithTimeout(`${MOBILITY_DATABASE_API_BASE}/v1/tokens`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ refresh_token: MOBILITY_DATABASE_REFRESH_TOKEN })
+  });
+  const payload = await response.json();
+  const token = String(payload?.access_token || payload?.accessToken || payload?.token || "").trim();
+  if (!token) {
+    throw new Error("Mobility Database token exchange succeeded but no access token was returned");
+  }
+  const expiresInSeconds = Number(payload?.expires_in ?? payload?.expiresIn ?? 3600);
+  mobilityDatabaseTokenState.token = token;
+  mobilityDatabaseTokenState.expiresAt = now + (Number.isFinite(expiresInSeconds) ? expiresInSeconds : 3600) * 1000;
+  return token;
+}
+
+function extractMobilityDatabaseFeedUrl(feed) {
+  const candidates = [
+    feed?.source_info?.producer_url,
+    feed?.sourceInfo?.producerUrl,
+    feed?.producer_url,
+    feed?.producerUrl,
+    feed?.url,
+    feed?.urls?.producer,
+    feed?.urls?.realtime
+  ];
+  return candidates.find((value) => typeof value === "string" && /^https?:\/\//i.test(value)) || null;
+}
+
+async function discoverMobilityDatabaseEndpoints(source = {}) {
+  const token = await getMobilityDatabaseAccessToken();
+  if (!token) {
+    throw new Error("Mobility Database source requires MOBILITY_DATABASE_ACCESS_TOKEN or MOBILITY_DATABASE_REFRESH_TOKEN");
+  }
+  const filters = source.mobilityDatabase || {};
+  const query = new URLSearchParams();
+  query.set("entity_types", String(filters.entity_types || "vp"));
+  query.set("limit", String(MOBILITY_DATABASE_MAX_ENDPOINTS));
+  if (filters.country_code) query.set("country_code", String(filters.country_code));
+  if (filters.subdivision_name) query.set("subdivision_name", String(filters.subdivision_name));
+  if (filters.municipality) query.set("municipality", String(filters.municipality));
+  if (filters.is_official != null) query.set("is_official", String(Boolean(filters.is_official)));
+  const url = `${MOBILITY_DATABASE_API_BASE}/v1/gtfs_rt_feeds?${query.toString()}`;
+  const payload = await (await fetchWithTimeout(url, { headers: { authorization: `Bearer ${token}` } })).json();
+  const feeds = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.results)
+      ? payload.results
+      : Array.isArray(payload?.feeds)
+        ? payload.feeds
+        : [];
+  return [...new Set(feeds.map(extractMobilityDatabaseFeedUrl).filter(Boolean))].slice(0, MOBILITY_DATABASE_MAX_ENDPOINTS);
+}
+
 async function loadSourceData(city, source) {
   const endpoints = Array.isArray(source?.endpoints) ? source.endpoints : [];
   const requestInit = source?.headers ? { headers: source.headers } : {};
@@ -779,6 +893,23 @@ async function loadSourceData(city, source) {
   if (source.provider === "wmata-json") {
     const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseWmataJson(data, city, source);
+  }
+
+  if (source.provider === "mobilitydb-gtfsrt-discovery") {
+    const discoveredEndpoints = await discoverMobilityDatabaseEndpoints(source);
+    if (!discoveredEndpoints.length) return [];
+    const settled = await Promise.allSettled(
+      discoveredEndpoints.map(async (url) => {
+        const buffer = await (await fetchWithTimeout(url, requestInit)).arrayBuffer();
+        return parseGtfsRealtime(buffer, city, source.fallbackLine || city.id, source);
+      })
+    );
+    const rows = settled
+      .filter((entry) => entry.status === "fulfilled")
+      .flatMap((entry) => entry.value);
+    if (rows.length || settled.every((entry) => entry.status === "fulfilled")) return rows;
+    const firstError = settled.find((entry) => entry.status === "rejected");
+    throw firstError?.reason || new Error("Mobility Database GTFS-RT feeds are temporarily unavailable");
   }
 
   if (source.provider === "gtfsrt-protobuf") {
