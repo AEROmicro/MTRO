@@ -55,8 +55,14 @@ const BART_ENDPOINTS = [
   "https://api.bart.gov/gtfsrt/vehicleposition.pb",
   "https://api.bart.gov/gtfsrt/vehiclepositions.pb"
 ];
+const MBTA_GTFSRT_ENDPOINTS = [
+  "https://cdn.mbta.com/realtime/VehiclePositions.pb"
+];
 const SOUND_TRANSIT_ENDPOINTS = [
   "https://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb"
+];
+const SOUND_TRANSIT_ALT_ENDPOINTS = [
+  "https://api.soundtransit.org/gtfsrealtime/vehicle-positions.pb"
 ];
 const MARTA_ENDPOINTS = [
   "https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/vehicle",
@@ -64,6 +70,9 @@ const MARTA_ENDPOINTS = [
 ];
 const VRE_ENDPOINTS = ["https://www.vre.org/gtfs-rt/vehiclepositions"];
 const RTD_ENDPOINTS = ["https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb"];
+const RTD_ALT_ENDPOINTS = [
+  "https://gtfsrt.rtd-denver.com/gtfsrt/VehiclePosition"
+];
 const WMATA_RAIL_ENDPOINTS = [
   "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions.pb",
   "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions"
@@ -117,12 +126,28 @@ const MTA_MNR_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr%2Fgtfs-mnr",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr/gtfs-mnr"
 ];
+const SEPTA_RAIL_GTFSRT_ENDPOINTS = [
+  "https://www3.septa.org/gtfsrt/septarail-pa-us/Vehicle/rtVehiclePosition.pb"
+];
+const SEPTA_BUS_GTFSRT_ENDPOINTS = [
+  "https://www3.septa.org/gtfsrt/septa-pa-us/Vehicle/rtVehiclePosition.pb"
+];
 // Try canonical endpoint first, then common URL variants observed during upstream URL migrations.
 const TRANSITOUS_ENDPOINTS = [
   "https://api.transitous.org/gtfs-rt/",
   "https://api.transitous.org/gtfs-rt",
   "https://transitous.org/gtfs-rt/"
 ];
+const NEXTBUS_BASE_URL = "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=";
+const nextBusUrl = (agencyTag) => `${NEXTBUS_BASE_URL}${encodeURIComponent(agencyTag)}&t=0`;
+const NEXTBUS_ENDPOINTS = {
+  dcCirculator: nextBusUrl("dc-circulator"),
+  mbta: nextBusUrl("mbta"),
+  septa: nextBusUrl("septa"),
+  sfmuni: nextBusUrl("sf-muni"),
+  cta: nextBusUrl("cta"),
+  laMetro: nextBusUrl("lametro")
+};
 
 const CITIES = [
   {
@@ -133,6 +158,7 @@ const CITIES = [
       { provider: "gtfsrt-protobuf", endpoints: VRE_ENDPOINTS, fallbackLine: "VRE", label: "VRE GTFS-RT" },
       ...WMATA_TRAIN_POSITION_SOURCES,
       ...WMATA_RAIL_SOURCES,
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.dcCirculator], fallbackLine: "DC Circulator", label: "NextBus DC Circulator" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -173,6 +199,8 @@ const CITIES = [
     bbox: [42.58, -71.35, 42.17, -70.85],
     sources: [
       { provider: "mbta-json", endpoints: ["https://api-v3.mbta.com/vehicles"], label: "MBTA" },
+      { provider: "gtfsrt-protobuf", endpoints: MBTA_GTFSRT_ENDPOINTS, fallbackLine: "MBTA", label: "MBTA GTFS-RT" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.mbta], fallbackLine: "MBTA", label: "NextBus MBTA" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -183,6 +211,9 @@ const CITIES = [
     bbox: [40.08, -75.35, 39.83, -74.95],
     sources: [
       { provider: "septa-json", endpoints: ["https://www3.septa.org/api/TrainView/index.php"], label: "SEPTA" },
+      { provider: "gtfsrt-protobuf", endpoints: SEPTA_RAIL_GTFSRT_ENDPOINTS, fallbackLine: "SEPTA Rail", label: "SEPTA Rail GTFS-RT" },
+      { provider: "gtfsrt-protobuf", endpoints: SEPTA_BUS_GTFSRT_ENDPOINTS, fallbackLine: "SEPTA", label: "SEPTA GTFS-RT" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.septa], fallbackLine: "SEPTA", label: "NextBus SEPTA" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -198,6 +229,7 @@ const CITIES = [
         fallbackLine: "BART",
         label: "BART GTFS-RT"
       },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.sfmuni], fallbackLine: "SF Muni", label: "NextBus SF Muni" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -212,6 +244,12 @@ const CITIES = [
         endpoints: SOUND_TRANSIT_ENDPOINTS,
         fallbackLine: "Sound Transit",
         label: "Sound Transit GTFS-RT"
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: SOUND_TRANSIT_ALT_ENDPOINTS,
+        fallbackLine: "Sound Transit",
+        label: "Sound Transit GTFS-RT (alt)"
       },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Seattle Rail", label: "Transitous GTFS-RT" }
@@ -238,6 +276,7 @@ const CITIES = [
     bbox: [40.10, -105.30, 39.55, -104.70],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: RTD_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT" },
+      { provider: "gtfsrt-protobuf", endpoints: RTD_ALT_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT (alt)" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -248,6 +287,7 @@ const CITIES = [
     bbox: [42.15, -88.10, 41.60, -87.45],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.cta], fallbackLine: "CTA", label: "NextBus CTA" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Chicago Rail", label: "Transitous GTFS-RT" }
     ]
@@ -276,6 +316,7 @@ const CITIES = [
     provider: "multi",
     bbox: [34.45, -118.90, 33.65, -117.60],
     sources: [
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.laMetro], fallbackLine: "LA Metro", label: "NextBus LA Metro" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Los Angeles Rail", label: "Transitous GTFS-RT" }
     ]
@@ -291,6 +332,8 @@ const CACHE_TTL_MS = 15000;
 const MIN_STOPPED_THRESHOLD_SECONDS = 15;
 const MS_TO_MPH_FACTOR = 2.23694;
 const MS_TO_KMH_FACTOR = 3.6;
+const MPH_PER_KMH = 0.621371;
+const COORDINATE_PRECISION = 6;
 
 const cityCache = globalThis.__mtroCityCache || new Map();
 const inflightByCity = globalThis.__mtroInflightByCity || new Map();
@@ -450,6 +493,46 @@ function parseGenericGeoJson(data, city, defaultLine) {
     .filter(Boolean);
 }
 
+/**
+ * Parse NextBus vehicleLocations JSON into normalized train rows.
+ * @param {any} data NextBus payload with a top-level `vehicle` array.
+ * @param {{bbox:number[]}} city City config with bounding box filter.
+ * @param {string} defaultLine Fallback route label for missing routeTag values.
+ * @returns {Array<object>} Normalized train-style rows.
+ */
+function parseNextBus(data, city, defaultLine) {
+  const rows = Array.isArray(data?.vehicle) ? data.vehicle : [];
+  return rows
+    .map((row, index) => {
+      const lat = Number(row?.lat);
+      const lon = Number(row?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+      const speedKmHr = Number(row?.speedKmHr);
+      const speedMph = Number.isFinite(speedKmHr) ? Math.round(speedKmHr * MPH_PER_KMH) : null;
+      const secsSinceReport = Number(row?.secsSinceReport);
+      const status = Number.isFinite(speedMph)
+        ? `${speedMph} mph`
+        : Number.isFinite(secsSinceReport)
+          ? `Reported ${secsSinceReport} sec ago`
+          : "Active";
+
+      return {
+        id: String(row?.id || `nextbus-${lat.toFixed(COORDINATE_PRECISION)}-${lon.toFixed(COORDINATE_PRECISION)}-${index}`),
+        line: String(row?.routeTag || defaultLine),
+        label: String(row?.id || row?.vehicleLabel || `${index + 1}`),
+        status,
+        heading: toHeadingCardinal(Number(row?.heading)),
+        speed: speedMph,
+        speedUnit: "mph",
+        state: String(row?.dirTag || "In service"),
+        type: "train",
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
 function parseGtfsRealtime(buffer, city, fallbackLine) {
   let feed;
   try {
@@ -554,6 +637,11 @@ async function loadSourceData(city, source) {
   if (source.provider === "septa-json") {
     const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseGenericGeoJson(data, city, "SEPTA");
+  }
+
+  if (source.provider === "nextbus-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseNextBus(data, city, source.fallbackLine || city.id);
   }
 
   if (source.provider === "wmata-json") {
