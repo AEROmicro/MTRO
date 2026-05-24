@@ -28,6 +28,9 @@ Store keys in environment variables instead of committing them:
 - `WMATA_API_KEYS` (comma-separated) or `WMATA_API_KEY`
 - `METRA_API_KEYS` (comma-separated) or `METRA_API_KEY`
 - `HOUSTON_METRO_API_KEYS` (comma-separated) or `HOUSTON_METRO_API_KEY`
+- `MOBILITY_DATABASE_ACCESS_TOKEN` (preferred) or `MOBILITY_DATABASE_REFRESH_TOKEN`
+- `MOBILITY_DATABASE_API_BASE` (optional override, defaults to `https://api.mobilitydatabase.org`)
+- `MOBILITY_DATABASE_MAX_ENDPOINTS` (optional cap for discovered GTFS-RT feeds per city, default `6`)
 
 For local development, use `.env.local` (already git-ignored).
 For deployed environments, set these as platform secrets (for example, in Vercel/Cloudflare project settings) so only project admins can view/manage them.
@@ -50,6 +53,7 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - Shared server-side city response caching to reduce duplicate upstream requests
 - City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Houston; Detroit; Salt Lake City; Milwaukee; and Los Angeles
 - Multi-source API coverage for these cities including:
+  - Mobility Database GTFS-RT feed discovery per city (adds additional provider URLs when available)
   - VRE GTFS-RT (Washington, DC area commuter rail)
   - WMATA TrainPositions + WMATA Rail GTFS-RT + WMATA Bus GTFS-RT (Washington, DC)
   - MTA NYCT + MTA Bus + LIRR + Metro-North GTFS-RT (New York City)
