@@ -517,7 +517,7 @@ function parseNextBus(data, city, defaultLine) {
           : "Active";
 
       return {
-        id: String(row?.id || `${lat.toFixed(COORDINATE_PRECISION)},${lon.toFixed(COORDINATE_PRECISION)},${index}`),
+        id: String(row?.id || `nextbus-${lat.toFixed(COORDINATE_PRECISION)}-${lon.toFixed(COORDINATE_PRECISION)}-${index}`),
         line: String(row?.routeTag || defaultLine),
         label: String(row?.id || row?.vehicleLabel || `${index + 1}`),
         status,
