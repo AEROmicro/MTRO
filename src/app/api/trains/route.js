@@ -332,7 +332,7 @@ const CACHE_TTL_MS = 15000;
 const MIN_STOPPED_THRESHOLD_SECONDS = 15;
 const MS_TO_MPH_FACTOR = 2.23694;
 const MS_TO_KMH_FACTOR = 3.6;
-const KMH_PER_MPH = 1.60934;
+const MPH_PER_KMH = 0.621371;
 const COORDINATE_PRECISION = 6;
 
 const cityCache = globalThis.__mtroCityCache || new Map();
@@ -508,7 +508,7 @@ function parseNextBus(data, city, defaultLine) {
       const lon = Number(row?.lon);
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
       const speedKmHr = Number(row?.speedKmHr);
-      const speedMph = Number.isFinite(speedKmHr) ? Math.round(speedKmHr / KMH_PER_MPH) : null;
+      const speedMph = Number.isFinite(speedKmHr) ? Math.round(speedKmHr * MPH_PER_KMH) : null;
       const secsSinceReport = Number(row?.secsSinceReport);
       const status = Number.isFinite(speedMph)
         ? `${speedMph} mph`
