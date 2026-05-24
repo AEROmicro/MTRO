@@ -56,8 +56,7 @@ const BART_ENDPOINTS = [
   "https://api.bart.gov/gtfsrt/vehiclepositions.pb"
 ];
 const MBTA_GTFSRT_ENDPOINTS = [
-  "https://cdn.mbta.com/realtime/VehiclePositions.pb",
-  "https://cdn.mbta.com/realtime/VehiclePositions.pb/"
+  "https://cdn.mbta.com/realtime/VehiclePositions.pb"
 ];
 const SOUND_TRANSIT_ENDPOINTS = [
   "https://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb"
@@ -497,13 +496,13 @@ function parseNextBus(data, city, defaultLine) {
       const lat = Number(row?.lat);
       const lon = Number(row?.lon);
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
-      const speedKmh = Number(row?.speedKmHr);
-      const speedMph = Number.isFinite(speedKmh) ? Math.round(speedKmh / 1.60934) : null;
+      const speedKmHr = Number(row?.speedKmHr);
+      const speedMph = Number.isFinite(speedKmHr) ? Math.round(speedKmHr / 1.60934) : null;
       const secsSinceReport = Number(row?.secsSinceReport);
       const status = Number.isFinite(speedMph)
         ? `${speedMph} mph`
         : Number.isFinite(secsSinceReport)
-          ? `Reported ${secsSinceReport}s ago`
+          ? `Reported ${secsSinceReport} sec ago`
           : "Active";
 
       return {
