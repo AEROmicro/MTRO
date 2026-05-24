@@ -152,6 +152,7 @@ const MTA_MNR_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr%2Fgtfs-mnr",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr/gtfs-mnr"
 ];
+const MTA_HEADERS = MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined;
 const SEPTA_RAIL_GTFSRT_ENDPOINTS = [
   "https://www3.septa.org/gtfsrt/septarail-pa-us/Vehicle/rtVehiclePosition.pb"
 ];
@@ -201,7 +202,7 @@ const CITIES = [
         endpoints: MTA_NYCT_ENDPOINTS,
         fallbackLine: "MTA Subway",
         label: "MTA NYCT GTFS-RT",
-        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+        headers: MTA_HEADERS
       },
       {
         provider: "gtfsrt-protobuf",
@@ -209,21 +210,21 @@ const CITIES = [
         fallbackLine: "MTA Bus",
         label: "MTA Bus GTFS-RT",
         defaultType: "bus",
-        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+        headers: MTA_HEADERS
       },
       {
         provider: "gtfsrt-protobuf",
         endpoints: MTA_LIRR_ENDPOINTS,
         fallbackLine: "LIRR",
         label: "MTA LIRR GTFS-RT",
-        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+        headers: MTA_HEADERS
       },
       {
         provider: "gtfsrt-protobuf",
         endpoints: MTA_MNR_ENDPOINTS,
         fallbackLine: "Metro-North",
         label: "MTA MNR GTFS-RT",
-        headers: MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined
+        headers: MTA_HEADERS
       },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }

@@ -1,5 +1,5 @@
 const MODE_COLORS = {
-  train: "#dc2626",
+  train: "#991b1b",
   bus: "#2563eb",
   tram: "#16a34a",
   other: "#7c3aed",
