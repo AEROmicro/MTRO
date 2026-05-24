@@ -52,12 +52,16 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - Multi-source API coverage for these cities including:
   - VRE GTFS-RT (Washington, DC area commuter rail)
   - WMATA TrainPositions + WMATA Rail GTFS-RT (Washington, DC)
+  - NextBus DC Circulator (Washington, DC)
   - MBTA vehicles API (Boston)
+  - MBTA GTFS-RT + NextBus MBTA (Boston)
   - BART GTFS-RT (Bay Area)
+  - NextBus SF Muni (Bay Area)
   - Sound Transit GTFS-RT + fallbacks (Seattle)
   - MARTA GTFS-RT + fallbacks (Atlanta)
-  - RTD GTFS-RT (Denver)
-  - SEPTA TrainView (Philadelphia)
-  - Metra GTFS-RT (Chicago)
+  - RTD GTFS-RT + alternate endpoint (Denver)
+  - SEPTA TrainView + SEPTA GTFS-RT + NextBus SEPTA (Philadelphia)
+  - Metra GTFS-RT + NextBus CTA (Chicago)
+  - NextBus LA Metro (Los Angeles)
   - Amtraker US network
   - Transitous GTFS-RT fallback
