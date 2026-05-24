@@ -123,7 +123,7 @@ const HOUSTON_METRO_SOURCE_BASE = {
   endpoints: HOUSTON_METRO_ENDPOINTS,
   fallbackLine: "METRO",
   label: "METRO GTFS Realtime",
-  defaultType: "other"
+  defaultType: "bus"
 };
 const HOUSTON_METRO_SOURCES = keysOrNull(HOUSTON_METRO_API_KEYS).map((key) => ({
   ...HOUSTON_METRO_SOURCE_BASE,
@@ -169,13 +169,25 @@ const NEXTBUS_BASE_URL = "https://webservices.nextbus.com/service/publicJSONFeed
 const nextBusUrl = (agencyTag) => `${NEXTBUS_BASE_URL}${encodeURIComponent(agencyTag)}&t=0`;
 const NEXTBUS_ENDPOINTS = {
   dcCirculator: nextBusUrl("dc-circulator"),
+  fairfaxConnector: nextBusUrl("fairfax"),
   mbta: nextBusUrl("mbta"),
   septa: nextBusUrl("septa"),
   sfmuni: nextBusUrl("sf-muni"),
   acTransit: nextBusUrl("actransit"),
+  vta: nextBusUrl("vta"),
+  samTrans: nextBusUrl("samtrans"),
   cta: nextBusUrl("cta"),
-  laMetro: nextBusUrl("lametro")
+  pace: nextBusUrl("pace"),
+  laMetro: nextBusUrl("lametro"),
+  bigBlueBus: nextBusUrl("bigbluebus"),
+  culverCityBus: nextBusUrl("culvercity")
 };
+const DETROIT_DDOT_ENDPOINTS = [
+  "https://ddot-beta.herokuapp.com/gtfsrt/vehiclePositions.pb"
+];
+const UTA_ENDPOINTS = [
+  "https://apps.rideuta.com/tms/gtfs/Vehicle"
+];
 
 const CITIES = [
   {
@@ -188,6 +200,7 @@ const CITIES = [
       ...WMATA_RAIL_SOURCES,
       ...WMATA_BUS_SOURCES,
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.dcCirculator], fallbackLine: "DC Circulator", label: "NextBus DC Circulator", defaultType: "bus" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.fairfaxConnector], fallbackLine: "Fairfax Connector", label: "NextBus Fairfax Connector", defaultType: "bus" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -269,6 +282,8 @@ const CITIES = [
       },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.sfmuni], fallbackLine: "SF Muni", label: "NextBus SF Muni", defaultType: "tram" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.acTransit], fallbackLine: "AC Transit", label: "NextBus AC Transit", defaultType: "bus" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.vta], fallbackLine: "VTA", label: "NextBus VTA", defaultType: "tram" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.samTrans], fallbackLine: "SamTrans", label: "NextBus SamTrans", defaultType: "bus" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
     ]
@@ -327,8 +342,9 @@ const CITIES = [
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.cta], fallbackLine: "CTA", label: "NextBus CTA", defaultType: "bus" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.pace], fallbackLine: "Pace", label: "NextBus Pace", defaultType: "bus" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
-      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Chicago Rail", label: "Transitous GTFS-RT" }
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Chicago Transit", label: "Transitous GTFS-RT" }
     ]
   },
   {
@@ -338,7 +354,7 @@ const CITIES = [
     sources: [
       ...HOUSTON_METRO_SOURCES,
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
-      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Houston Rail", label: "Transitous GTFS-RT" }
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Houston Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
     ]
   },
   {
@@ -357,9 +373,31 @@ const CITIES = [
     bbox: [34.45, -118.90, 33.65, -117.60],
     sources: [
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.laMetro], fallbackLine: "LA Metro", label: "NextBus LA Metro", defaultType: "bus" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.bigBlueBus], fallbackLine: "Big Blue Bus", label: "NextBus Big Blue Bus", defaultType: "bus" },
+      { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.culverCityBus], fallbackLine: "Culver CityBus", label: "NextBus Culver CityBus", defaultType: "bus" },
       { provider: "gtfsrt-protobuf", endpoints: LA_METRO_GTFS_ENDPOINTS, fallbackLine: "LA Metro", label: "LA Metro GTFS-RT", defaultType: "tram" },
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
-      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Los Angeles Rail", label: "Transitous GTFS-RT" }
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Los Angeles Transit", label: "Transitous GTFS-RT" }
+    ]
+  },
+  {
+    id: "detroit",
+    provider: "multi",
+    bbox: [42.55, -83.40, 42.20, -82.90],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: DETROIT_DDOT_ENDPOINTS, fallbackLine: "DDOT", label: "DDOT GTFS-RT", defaultType: "bus" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Detroit Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
+    ]
+  },
+  {
+    id: "salt-lake-city",
+    provider: "multi",
+    bbox: [40.92, -112.20, 40.45, -111.70],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: UTA_ENDPOINTS, fallbackLine: "UTA", label: "UTA GTFS-RT", defaultType: "tram" },
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Salt Lake Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
     ]
   }
 ];

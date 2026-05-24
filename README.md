@@ -48,22 +48,25 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - UTC and selected-city local time bar with timezone abbreviation
 - In-session past-data snapshots for quick playback
 - Shared server-side city response caching to reduce duplicate upstream requests
-- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Houston; Milwaukee; and Los Angeles
+- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Houston; Detroit; Salt Lake City; Milwaukee; and Los Angeles
 - Multi-source API coverage for these cities including:
   - VRE GTFS-RT (Washington, DC area commuter rail)
   - WMATA TrainPositions + WMATA Rail GTFS-RT + WMATA Bus GTFS-RT (Washington, DC)
   - MTA NYCT + MTA Bus + LIRR + Metro-North GTFS-RT (New York City)
-  - NextBus DC Circulator (Washington, DC)
+  - NextBus DC Circulator + Fairfax Connector (Washington, DC)
   - MBTA vehicles API (Boston)
   - MBTA GTFS-RT + NextBus MBTA (Boston)
   - BART GTFS-RT (Bay Area)
-  - NextBus SF Muni + NextBus AC Transit (Bay Area)
+  - NextBus SF Muni + NextBus AC Transit + NextBus VTA + NextBus SamTrans (Bay Area)
   - Sound Transit GTFS-RT + fallbacks (Seattle)
   - MARTA GTFS-RT + fallbacks (Atlanta)
   - RTD GTFS-RT + alternate endpoint (Denver)
   - SEPTA TrainView + SEPTA GTFS-RT + NextBus SEPTA (Philadelphia)
-  - Metra GTFS-RT + NextBus CTA (Chicago)
+  - Metra GTFS-RT + NextBus CTA + NextBus Pace (Chicago)
+  - METRO GTFS-RT + Transitous GTFS-RT (Houston)
+  - DDOT GTFS-RT + Transitous GTFS-RT (Detroit)
+  - UTA GTFS-RT + Transitous GTFS-RT (Salt Lake City)
   - MCTS GTFS-RT (Milwaukee)
-  - NextBus LA Metro + LA Metro GTFS-RT (Los Angeles)
+  - NextBus LA Metro + NextBus Big Blue Bus + NextBus Culver CityBus + LA Metro GTFS-RT (Los Angeles)
   - Amtraker US network
   - Transitous GTFS-RT fallback

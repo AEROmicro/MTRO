@@ -23,6 +23,8 @@ const CITIES = [
   { id: "denver", name: "Denver", center: [39.7392, -104.9903], zoom: 10, bbox: [40.10, -105.30, 39.55, -104.70], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Denver" },
   { id: "chicago", name: "Chicago", center: [41.8781, -87.6298], zoom: 10, bbox: [42.15, -88.10, 41.60, -87.45], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
   { id: "houston", name: "Houston", center: [29.7604, -95.3698], zoom: 10, bbox: [30.20, -95.80, 29.40, -95.00], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
+  { id: "detroit", name: "Detroit", center: [42.3314, -83.0458], zoom: 10, bbox: [42.55, -83.40, 42.20, -82.90], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Detroit" },
+  { id: "salt-lake-city", name: "Salt Lake City", center: [40.7608, -111.8910], zoom: 10, bbox: [40.92, -112.20, 40.45, -111.70], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Denver" },
   { id: "milwaukee", name: "Milwaukee", center: [43.0389, -87.9065], zoom: 10, bbox: [43.25, -88.20, 42.85, -87.75], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
   { id: "los-angeles", name: "Los Angeles", center: [34.0522, -118.2437], zoom: 10, bbox: [34.45, -118.90, 33.65, -117.60], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Los_Angeles" }
 ];
