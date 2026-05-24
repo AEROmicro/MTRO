@@ -22,6 +22,10 @@ function keysOrNull(keys) {
   return Array.isArray(keys) && keys.length ? keys : [null];
 }
 
+function trimTrailingSlashes(value) {
+  return String(value || "").replace(/\/+$/, "");
+}
+
 const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
 const WMATA_API_KEYS = parseApiKeys(
   process.env.WMATA_API_KEYS,
@@ -40,10 +44,12 @@ const HOUSTON_METRO_API_KEYS = parseApiKeys(
   process.env.HOUSTON_METRO_PRIMARY_KEY,
   process.env.HOUSTON_METRO_SECONDARY_KEY
 );
-const MOBILITY_DATABASE_API_BASE = String(process.env.MOBILITY_DATABASE_API_BASE || "https://api.mobilitydatabase.org").replace(/\/+$/, "");
+const MOBILITY_DATABASE_API_BASE = trimTrailingSlashes(process.env.MOBILITY_DATABASE_API_BASE || "https://api.mobilitydatabase.org");
 const MOBILITY_DATABASE_ACCESS_TOKEN = String(process.env.MOBILITY_DATABASE_ACCESS_TOKEN || "").trim();
 const MOBILITY_DATABASE_REFRESH_TOKEN = String(process.env.MOBILITY_DATABASE_REFRESH_TOKEN || "").trim();
 const MOBILITY_DATABASE_MAX_ENDPOINTS = Math.max(1, Math.min(25, Number(process.env.MOBILITY_DATABASE_MAX_ENDPOINTS) || 6));
+const DEFAULT_MOBILITY_DATABASE_TOKEN_EXPIRY_SECONDS = 3600;
+const MOBILITY_DATABASE_TOKEN_REUSE_BUFFER_MS = 15000;
 
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
@@ -211,7 +217,7 @@ const MOBILITY_DATABASE_CITY_FILTERS = {
 
 function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train") {
   const locationFilter = MOBILITY_DATABASE_CITY_FILTERS[cityId];
-  if (!locationFilter) return null;
+  if (!locationFilter) return null; // Intentionally optional so unsupported cities can skip discovery.
   return {
     provider: "mobilitydb-gtfsrt-discovery",
     label: "Mobility Database GTFS-RT",
@@ -807,7 +813,7 @@ async function fetchFirst(urls, fetcher) {
 async function getMobilityDatabaseAccessToken() {
   if (MOBILITY_DATABASE_ACCESS_TOKEN) return MOBILITY_DATABASE_ACCESS_TOKEN;
   const now = Date.now();
-  if (mobilityDatabaseTokenState.token && mobilityDatabaseTokenState.expiresAt > now + 15000) {
+  if (mobilityDatabaseTokenState.token && mobilityDatabaseTokenState.expiresAt > now + MOBILITY_DATABASE_TOKEN_REUSE_BUFFER_MS) {
     return mobilityDatabaseTokenState.token;
   }
   if (!MOBILITY_DATABASE_REFRESH_TOKEN) return null;
@@ -820,15 +826,18 @@ async function getMobilityDatabaseAccessToken() {
   const payload = await response.json();
   const token = String(payload?.access_token || payload?.accessToken || payload?.token || "").trim();
   if (!token) {
-    throw new Error("Mobility Database token exchange succeeded but no access token was returned");
+    const payloadKeys = payload && typeof payload === "object" ? Object.keys(payload).join(", ") : "none";
+    throw new Error(`Mobility Database token exchange completed but returned no valid access token (response fields: ${payloadKeys || "none"})`);
   }
-  const expiresInSeconds = Number(payload?.expires_in ?? payload?.expiresIn ?? 3600);
+  const expiresInSeconds = Number(payload?.expires_in ?? payload?.expiresIn);
+  const tokenLifetimeSeconds = expiresInSeconds > 0 ? expiresInSeconds : DEFAULT_MOBILITY_DATABASE_TOKEN_EXPIRY_SECONDS;
   mobilityDatabaseTokenState.token = token;
-  mobilityDatabaseTokenState.expiresAt = now + (Number.isFinite(expiresInSeconds) ? expiresInSeconds : 3600) * 1000;
+  mobilityDatabaseTokenState.expiresAt = now + tokenLifetimeSeconds * 1000;
   return token;
 }
 
 function extractMobilityDatabaseFeedUrl(feed) {
+  // The catalog can expose producer URLs via multiple field names across versions/export formats.
   const candidates = [
     feed?.source_info?.producer_url,
     feed?.sourceInfo?.producerUrl,
@@ -844,7 +853,7 @@ function extractMobilityDatabaseFeedUrl(feed) {
 async function discoverMobilityDatabaseEndpoints(source = {}) {
   const token = await getMobilityDatabaseAccessToken();
   if (!token) {
-    throw new Error("Mobility Database source requires MOBILITY_DATABASE_ACCESS_TOKEN or MOBILITY_DATABASE_REFRESH_TOKEN");
+    throw new Error("Mobility Database source is not configured: set MOBILITY_DATABASE_ACCESS_TOKEN or MOBILITY_DATABASE_REFRESH_TOKEN");
   }
   const filters = source.mobilityDatabase || {};
   const query = new URLSearchParams();
@@ -853,17 +862,26 @@ async function discoverMobilityDatabaseEndpoints(source = {}) {
   if (filters.country_code) query.set("country_code", String(filters.country_code));
   if (filters.subdivision_name) query.set("subdivision_name", String(filters.subdivision_name));
   if (filters.municipality) query.set("municipality", String(filters.municipality));
-  if (filters.is_official != null) query.set("is_official", String(Boolean(filters.is_official)));
+  if (typeof filters.is_official === "boolean") query.set("is_official", String(filters.is_official));
   const url = `${MOBILITY_DATABASE_API_BASE}/v1/gtfs_rt_feeds?${query.toString()}`;
-  const payload = await (await fetchWithTimeout(url, { headers: { authorization: `Bearer ${token}` } })).json();
-  const feeds = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.results)
-      ? payload.results
-      : Array.isArray(payload?.feeds)
-        ? payload.feeds
-        : [];
-  return [...new Set(feeds.map(extractMobilityDatabaseFeedUrl).filter(Boolean))].slice(0, MOBILITY_DATABASE_MAX_ENDPOINTS);
+  const response = await fetchWithTimeout(url, { headers: { authorization: `Bearer ${token}` } });
+  const payload = await response.json();
+  let feeds = [];
+  if (Array.isArray(payload)) {
+    feeds = payload;
+  } else if (Array.isArray(payload?.results)) {
+    feeds = payload.results;
+  } else if (Array.isArray(payload?.feeds)) {
+    feeds = payload.feeds;
+  }
+  const uniqueUrls = new Set();
+  for (const feed of feeds) {
+    const urlValue = extractMobilityDatabaseFeedUrl(feed);
+    if (!urlValue) continue;
+    uniqueUrls.add(urlValue);
+    if (uniqueUrls.size >= MOBILITY_DATABASE_MAX_ENDPOINTS) break;
+  }
+  return [...uniqueUrls];
 }
 
 async function loadSourceData(city, source) {
@@ -907,9 +925,10 @@ async function loadSourceData(city, source) {
     const rows = settled
       .filter((entry) => entry.status === "fulfilled")
       .flatMap((entry) => entry.value);
+    // Keep partial successes so one broken discovered feed does not block all discovered feeds.
     if (rows.length || settled.every((entry) => entry.status === "fulfilled")) return rows;
     const firstError = settled.find((entry) => entry.status === "rejected");
-    throw firstError?.reason || new Error("Mobility Database GTFS-RT feeds are temporarily unavailable");
+    throw firstError?.reason || new Error("Failed to fetch Mobility Database GTFS-RT feeds");
   }
 
   if (source.provider === "gtfsrt-protobuf") {
