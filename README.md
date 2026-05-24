@@ -52,6 +52,7 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - Multi-source API coverage for these cities including:
   - VRE GTFS-RT (Washington, DC area commuter rail)
   - WMATA TrainPositions + WMATA Rail GTFS-RT + WMATA Bus GTFS-RT (Washington, DC)
+  - MTA NYCT + MTA Bus + LIRR + Metro-North GTFS-RT (New York City)
   - NextBus DC Circulator (Washington, DC)
   - MBTA vehicles API (Boston)
   - MBTA GTFS-RT + NextBus MBTA (Boston)

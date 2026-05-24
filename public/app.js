@@ -1,10 +1,11 @@
 const MODE_COLORS = {
-  train: "#111111",
+  train: "#991b1b",
   bus: "#2563eb",
   tram: "#16a34a",
   other: "#7c3aed",
   station: "#6b7280"
 };
+const MODE_LEGEND_ORDER = ["train", "bus", "tram", "other", "station"];
 
 const HEADING_DEG = {
   N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
@@ -34,6 +35,7 @@ const refreshBtn = document.getElementById("refreshBtn");
 const statusEl = document.getElementById("status");
 const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
+const modeLegend = document.getElementById("modeLegend");
 const utcTimeEl = document.getElementById("utcTime");
 const localTimeEl = document.getElementById("localTime");
 const DEFAULT_CITY_ID = "new-york-city";
@@ -106,6 +108,25 @@ function getVehicleLabel(type) {
   if (normalized === "station") return "Station";
   if (normalized === "other") return "Vehicle";
   return "Train";
+}
+
+function renderModeLegend() {
+  if (!modeLegend) return;
+  modeLegend.textContent = "";
+  for (const type of MODE_LEGEND_ORDER) {
+    const item = document.createElement("li");
+    item.className = "mode-legend-item";
+
+    const dot = document.createElement("span");
+    dot.className = "mode-legend-dot";
+    dot.style.background = getVehicleColor(type);
+
+    const label = document.createElement("span");
+    label.textContent = getVehicleLabel(type);
+
+    item.append(dot, label);
+    modeLegend.append(item);
+  }
 }
 
 function headingToDeg(h) {
@@ -381,7 +402,8 @@ setInterval(() => {
 
 setInterval(updateTimeBar, 1000);
 
-loadCity("washington-dc");
+loadCity(defaultCity.id);
+renderModeLegend();
 updateTimeBar();
 
 function renderTrains(trains, timestamp = null) {
@@ -414,6 +436,7 @@ function renderTrainList(trains, timestamp = null) {
     const item = document.createElement("li");
     item.className = `train-item${train.type === "station" ? " train-item--station" : ""}`;
     item.dataset.id = train.id;
+    item.style.borderLeft = `4px solid ${getVehicleColor(train.type)}`;
 
     if (train.type !== "station") {
       const dot = document.createElement("span");
