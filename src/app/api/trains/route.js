@@ -379,11 +379,20 @@ function toHeadingCardinal(degrees) {
   return dirs[Math.round(normalized / 22.5) % dirs.length];
 }
 
+const VEHICLE_TYPE_ALIASES = {
+  rail: "train",
+  streetcar: "tram",
+  light_rail: "tram",
+  "light-rail": "tram"
+};
+const TRAM_KEYWORDS = /(streetcar|tram|trolley|light rail|lightrail|lrt|muni)/;
+const BUS_KEYWORDS = /(bus|coach|circulator|metrobus|rapidbus|brt|mcts|cta|ac transit)/;
+const TRAIN_KEYWORDS = /(train|rail|subway|bart|metra|amtrak|lirr|mnr|vre|marta|septa|wmata|sound transit|rtd|metro rail|mta nyct)/;
+
 function normalizeVehicleType(type) {
   if (!type) return null;
   const normalized = String(type).trim().toLowerCase();
-  if (normalized === "rail") return "train";
-  if (normalized === "streetcar" || normalized === "light_rail" || normalized === "light-rail") return "tram";
+  if (VEHICLE_TYPE_ALIASES[normalized]) return VEHICLE_TYPE_ALIASES[normalized];
   if (["train", "bus", "tram", "other", "station"].includes(normalized)) return normalized;
   return null;
 }
@@ -396,9 +405,9 @@ function inferVehicleType(defaultType, ...values) {
     .map((value) => String(value).toLowerCase())
     .join(" ");
   if (!text) return "other";
-  if (/(streetcar|tram|trolley|light rail|lightrail|lrt|muni)/.test(text)) return "tram";
-  if (/(bus|coach|circulator|metrobus|rapidbus|brt|mcts|cta)/.test(text)) return "bus";
-  if (/(train|rail|subway|metro|bart|metra|amtrak|lirr|mnr|vre|marta|septa|wmata|sound transit|rtd)/.test(text)) return "train";
+  if (TRAM_KEYWORDS.test(text)) return "tram";
+  if (BUS_KEYWORDS.test(text)) return "bus";
+  if (TRAIN_KEYWORDS.test(text)) return "train";
   return "other";
 }
 

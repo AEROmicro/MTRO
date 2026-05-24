@@ -36,8 +36,10 @@ const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
 const utcTimeEl = document.getElementById("utcTime");
 const localTimeEl = document.getElementById("localTime");
+const DEFAULT_CITY_ID = "new-york-city";
+const defaultCity = CITIES.find((city) => city.id === DEFAULT_CITY_ID) || CITIES[0];
 
-const map = L.map("map", { zoomControl: true }).setView([40.7128, -74.0060], 10);
+const map = L.map("map", { zoomControl: true }).setView(defaultCity.center, defaultCity.zoom);
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -46,7 +48,7 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 const markerLayer = L.layerGroup().addTo(map);
 const historyByCity = new Map();
-let currentCity = CITIES.find((city) => city.id === "new-york-city") || CITIES[0];
+let currentCity = defaultCity;
 const API_PROXY_PATH = "/api/trains";
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
@@ -67,7 +69,7 @@ for (const city of CITIES) {
   autoOption.value = city.name;
   cityOptions.append(autoOption);
 }
-citySelect.value = "new-york-city";
+citySelect.value = defaultCity.id;
 citySearch.value = CITIES.find((city) => city.id === citySelect.value)?.name || "";
 
 function escapeHtml(text) {
