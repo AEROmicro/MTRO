@@ -1,4 +1,10 @@
-const PALETTE = ["#f87171", "#60a5fa", "#4ade80", "#fbbf24", "#c084fc", "#34d399", "#fb923c", "#f472b6", "#22d3ee", "#a3e635"];
+const MODE_COLORS = {
+  train: "#111111",
+  bus: "#2563eb",
+  tram: "#16a34a",
+  other: "#7c3aed",
+  station: "#6b7280"
+};
 
 const HEADING_DEG = {
   N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
@@ -30,8 +36,10 @@ const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
 const utcTimeEl = document.getElementById("utcTime");
 const localTimeEl = document.getElementById("localTime");
+const DEFAULT_CITY_ID = "new-york-city";
+const defaultCity = CITIES.find((city) => city.id === DEFAULT_CITY_ID) || CITIES[0];
 
-const map = L.map("map", { zoomControl: true }).setView([38.9072, -77.0369], 10);
+const map = L.map("map", { zoomControl: true }).setView(defaultCity.center, defaultCity.zoom);
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -40,7 +48,7 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 const markerLayer = L.layerGroup().addTo(map);
 const historyByCity = new Map();
-let currentCity = CITIES[0];
+let currentCity = defaultCity;
 const API_PROXY_PATH = "/api/trains";
 const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
@@ -61,7 +69,7 @@ for (const city of CITIES) {
   autoOption.value = city.name;
   cityOptions.append(autoOption);
 }
-citySelect.value = "washington-dc";
+citySelect.value = defaultCity.id;
 citySearch.value = CITIES.find((city) => city.id === citySelect.value)?.name || "";
 
 function escapeHtml(text) {
@@ -77,10 +85,27 @@ function inBbox(lat, lon, bbox) {
   return lat <= bbox[0] && lon >= bbox[1] && lat >= bbox[2] && lon <= bbox[3];
 }
 
-function getRouteColor(line) {
-  let h = 0;
-  for (let i = 0; i < line.length; i++) h = (Math.imul(31, h) + line.charCodeAt(i)) | 0;
-  return PALETTE[Math.abs(h) % PALETTE.length];
+function normalizeVehicleType(type) {
+  const normalized = String(type || "other").toLowerCase();
+  if (normalized === "rail") return "train";
+  if (normalized === "streetcar" || normalized === "light_rail" || normalized === "light-rail") return "tram";
+  if (normalized === "station") return "station";
+  if (normalized === "train" || normalized === "bus" || normalized === "tram" || normalized === "other") return normalized;
+  return "other";
+}
+
+function getVehicleColor(type) {
+  const normalized = normalizeVehicleType(type);
+  return MODE_COLORS[normalized] || MODE_COLORS.other;
+}
+
+function getVehicleLabel(type) {
+  const normalized = normalizeVehicleType(type);
+  if (normalized === "bus") return "Bus";
+  if (normalized === "tram") return "Tram";
+  if (normalized === "station") return "Station";
+  if (normalized === "other") return "Vehicle";
+  return "Train";
 }
 
 function headingToDeg(h) {
@@ -296,7 +321,7 @@ async function loadCity(cityId) {
   currentCity = city;
   citySearch.value = city.name;
   map.setView(city.center, city.zoom);
-  panelTitle.textContent = `${city.name} Trains`;
+  panelTitle.textContent = `${city.name} Transit`;
   statusEl.textContent = "Loading…";
   updateTimeBar();
 
@@ -371,7 +396,7 @@ function renderTrains(trains, timestamp = null) {
 function renderTrainList(trains, timestamp = null) {
   trainList.textContent = "";
 
-  const activeTrains = trains.filter((t) => t.type === "train");
+  const activeVehicles = trains.filter((t) => t.type !== "station");
 
   if (!trains.length) {
     const empty = document.createElement("li");
@@ -381,8 +406,8 @@ function renderTrainList(trains, timestamp = null) {
     return;
   }
 
-  if (activeTrains.length) {
-    panelTitle.textContent = `${currentCity.name} Trains (${activeTrains.length} active)`;
+  if (activeVehicles.length) {
+    panelTitle.textContent = `${currentCity.name} Transit (${activeVehicles.length} active)`;
   }
 
   for (const train of trains) {
@@ -393,7 +418,7 @@ function renderTrainList(trains, timestamp = null) {
     if (train.type !== "station") {
       const dot = document.createElement("span");
       dot.className = "train-color-dot";
-      dot.style.background = getRouteColor(train.line);
+      dot.style.background = getVehicleColor(train.type);
       item.append(dot);
     }
 
@@ -403,7 +428,7 @@ function renderTrainList(trains, timestamp = null) {
 
     const meta = document.createElement("div");
     meta.className = "train-meta";
-    const labelPart = train.type === "station" ? "Station" : `#${train.label}`;
+    const labelPart = train.type === "station" ? "Station" : `${getVehicleLabel(train.type)} #${train.label}`;
     const timePart = timestamp ? ` · ${new Date(timestamp).toLocaleTimeString()}` : "";
     meta.textContent = `${labelPart} · ${train.status}${timePart}`;
 
@@ -423,14 +448,15 @@ function popupHtml(train) {
   if (train.type === "station") {
     return `<div class="popup-station"><strong>${escapeHtml(train.line)}</strong><div class="popup-meta">${escapeHtml(train.label)}</div></div>`;
   }
-  const color = escapeHtml(getRouteColor(train.line));
+  const color = escapeHtml(getVehicleColor(train.type));
+  const vehicleLabel = getVehicleLabel(train.type);
   const speedStr = train.speed != null ? `${train.speed} ${escapeHtml(train.speedUnit)}` : train.status;
   const headingStr = train.heading ? ` · ${escapeHtml(train.heading)}` : "";
   const stateStr = train.state && train.state !== "Active" ? ` · ${escapeHtml(train.state)}` : "";
   return [
     `<div class="popup-train">`,
     `<div class="popup-route-bar" style="background:${color}"></div>`,
-    `<strong class="popup-train-id">Train #${escapeHtml(train.label)}</strong>`,
+    `<strong class="popup-train-id">${escapeHtml(vehicleLabel)} #${escapeHtml(train.label)}</strong>`,
     `<div class="popup-route-name">${escapeHtml(train.line)}</div>`,
     `<div class="popup-details">${escapeHtml(speedStr)}${headingStr}${stateStr}</div>`,
     `</div>`
@@ -457,7 +483,7 @@ function buildTrainIcon(train) {
     });
   }
 
-  const color = getRouteColor(train.line);
+  const color = getVehicleColor(train.type);
   const deg = headingToDeg(train.heading);
   const rotation = deg ?? 0;
   const arrowSvg = deg !== null

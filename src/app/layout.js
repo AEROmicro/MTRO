@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "MTRO",
-  description: "Train tracking with city filtering and map view."
+  description: "Transit tracking with city filtering and map view."
 };
 
 export default function RootLayout({ children }) {

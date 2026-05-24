@@ -1,7 +1,7 @@
 ![MTRO Logo](MTRO_LOGO.png)
 
 
-MTRO is a Next.js train-tracking web app with a modern black/white UI, city filtering, and OpenStreetMap mapping.
+MTRO is a Next.js transit-tracking web app with a modern black/white UI, city filtering, and OpenStreetMap mapping.
 
 ## Self-host (Next.js)
 
@@ -42,8 +42,8 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 
 ## Features
 
-- Defaults to **Washington, DC**
-- OpenStreetMap + live train markers
+- Defaults to **New York City**
+- OpenStreetMap + live transit markers (train/bus/tram/other mode colors)
 - Same-origin API proxy at `/api/trains`
 - UTC and selected-city local time bar with timezone abbreviation
 - In-session past-data snapshots for quick playback
@@ -51,17 +51,18 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Houston; Milwaukee; and Los Angeles
 - Multi-source API coverage for these cities including:
   - VRE GTFS-RT (Washington, DC area commuter rail)
-  - WMATA TrainPositions + WMATA Rail GTFS-RT (Washington, DC)
+  - WMATA TrainPositions + WMATA Rail GTFS-RT + WMATA Bus GTFS-RT (Washington, DC)
   - NextBus DC Circulator (Washington, DC)
   - MBTA vehicles API (Boston)
   - MBTA GTFS-RT + NextBus MBTA (Boston)
   - BART GTFS-RT (Bay Area)
-  - NextBus SF Muni (Bay Area)
+  - NextBus SF Muni + NextBus AC Transit (Bay Area)
   - Sound Transit GTFS-RT + fallbacks (Seattle)
   - MARTA GTFS-RT + fallbacks (Atlanta)
   - RTD GTFS-RT + alternate endpoint (Denver)
   - SEPTA TrainView + SEPTA GTFS-RT + NextBus SEPTA (Philadelphia)
   - Metra GTFS-RT + NextBus CTA (Chicago)
-  - NextBus LA Metro (Los Angeles)
+  - MCTS GTFS-RT (Milwaukee)
+  - NextBus LA Metro + LA Metro GTFS-RT (Los Angeles)
   - Amtraker US network
   - Transitous GTFS-RT fallback
