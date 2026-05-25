@@ -26,6 +26,12 @@ function trimTrailingSlashes(value) {
   return String(value || "").replace(/\/+$/, "");
 }
 
+function createStrictKeyedSources(keys, createSource) {
+  return Array.isArray(keys) && keys.length
+    ? keys.map((key) => createSource(key)).filter(Boolean)
+    : [];
+}
+
 const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
 const WMATA_DEMO_API_KEY = String(process.env.WMATA_DEMO_API_KEY || "e13626d03d8e4c03ac07f95541b3091b").trim();
 const WMATA_API_KEYS = parseApiKeys(
@@ -42,11 +48,23 @@ const METRA_API_KEYS = parseApiKeys(
   process.env.METRA_API_KEYS,
   process.env.METRA_API_KEY
 );
+const BAY_AREA_511_API_KEYS = parseApiKeys(
+  process.env.BAY_AREA_511_API_KEYS,
+  process.env.BAY_AREA_511_API_KEY
+);
 const HOUSTON_METRO_API_KEYS = parseApiKeys(
   process.env.HOUSTON_METRO_API_KEYS,
   process.env.HOUSTON_METRO_API_KEY,
   process.env.HOUSTON_METRO_PRIMARY_KEY,
   process.env.HOUSTON_METRO_SECONDARY_KEY
+);
+const STM_API_KEYS = parseApiKeys(
+  process.env.STM_API_KEYS,
+  process.env.STM_API_KEY
+);
+const TRANSLINK_API_KEYS = parseApiKeys(
+  process.env.TRANSLINK_API_KEYS,
+  process.env.TRANSLINK_API_KEY
 );
 const MOBILITY_DATABASE_API_BASE = trimTrailingSlashes(process.env.MOBILITY_DATABASE_API_BASE || "https://api.mobilitydatabase.org");
 const MOBILITY_DATABASE_ACCESS_TOKEN = String(process.env.MOBILITY_DATABASE_ACCESS_TOKEN || "").trim();
@@ -152,8 +170,41 @@ const HOUSTON_METRO_SOURCES = keysOrNull(HOUSTON_METRO_API_KEYS).map((key) => ({
 const MCTS_ENDPOINTS = [
   "https://realtime.ridemcts.com/gtfsrt/vehicles"
 ];
+const BAY_AREA_511_AGENCIES = [
+  { agency: "RG", fallbackLine: "511 Regional", label: "511 Regional GTFS-RT" },
+  { agency: "SF", fallbackLine: "SFMTA Muni", label: "511 SFMTA GTFS-RT", defaultType: "tram" },
+  { agency: "AC", fallbackLine: "AC Transit", label: "511 AC Transit GTFS-RT", defaultType: "bus" },
+  { agency: "SC", fallbackLine: "VTA", label: "511 VTA GTFS-RT", defaultType: "tram" },
+  { agency: "CT", fallbackLine: "Caltrain", label: "511 Caltrain GTFS-RT", defaultType: "train" }
+];
+const BAY_AREA_511_SOURCES = createStrictKeyedSources(
+  BAY_AREA_511_API_KEYS,
+  (key) => BAY_AREA_511_AGENCIES.map((source) => ({
+    provider: "gtfsrt-protobuf",
+    endpoints: [`https://api.511.org/Transit/VehiclePositions?api_key=${encodeURIComponent(key)}&agency=${encodeURIComponent(source.agency)}`],
+    fallbackLine: source.fallbackLine,
+    label: source.label,
+    defaultType: source.defaultType
+  }))
+).flat();
 const LA_METRO_GTFS_ENDPOINTS = [
   "https://api.metro.net/gtfs/vehiclePositions/vehicles.pb"
+];
+const LA_METRO_JSON_SOURCES = [
+  {
+    provider: "gtfsrt-json",
+    endpoints: ["https://api.metro.net/agencies/LACMTA/vehicle_positions/"],
+    fallbackLine: "LA Metro Bus",
+    label: "LA Metro API v2 Bus",
+    defaultType: "bus"
+  },
+  {
+    provider: "gtfsrt-json",
+    endpoints: ["https://api.metro.net/agencies/LACMTA_Rail/vehicle_positions/"],
+    fallbackLine: "LA Metro Rail",
+    label: "LA Metro API v2 Rail",
+    defaultType: "train"
+  }
 ];
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
@@ -205,9 +256,34 @@ const NEXTBUS_ENDPOINTS = {
 const DETROIT_DDOT_ENDPOINTS = [
   "https://ddot-beta.herokuapp.com/gtfsrt/vehiclePositions.pb"
 ];
+const DETROIT_DDOT_ALT_ENDPOINTS = [
+  "https://ddotapi.herokuapp.com/vehicle_positions.pb"
+];
 const UTA_ENDPOINTS = [
   "https://apps.rideuta.com/tms/gtfs/Vehicle"
 ];
+const UTA_ALT_ENDPOINTS = [
+  "https://data.rideuta.com/gtfs-rt/VehiclePosition.pb"
+];
+const TTC_ENDPOINTS = [
+  "https://bustime.ttc.ca/gtfsrt/vehicles"
+];
+const STM_ENDPOINTS = [
+  "https://api.stm.info/pub/od/gtfs-rt/ic/vp"
+];
+const STM_SOURCES = createStrictKeyedSources(STM_API_KEYS, (key) => ({
+  provider: "gtfsrt-protobuf",
+  endpoints: STM_ENDPOINTS,
+  fallbackLine: "STM",
+  label: "STM GTFS-RT",
+  headers: { apiKey: key }
+}));
+const TRANSLINK_SOURCES = createStrictKeyedSources(TRANSLINK_API_KEYS, (key) => ({
+  provider: "gtfsrt-protobuf",
+  endpoints: [`https://gtfsapi.translink.ca/v3/gtfsposition?apikey=${encodeURIComponent(key)}`],
+  fallbackLine: "TransLink",
+  label: "TransLink GTFS-RT"
+}));
 const MOBILITY_DATABASE_CITY_FILTERS = {
   "washington-dc": { country_code: "US", subdivision_name: "District of Columbia", municipality: "Washington" },
   "new-york-city": { country_code: "US", subdivision_name: "New York", municipality: "New York" },
@@ -222,7 +298,10 @@ const MOBILITY_DATABASE_CITY_FILTERS = {
   detroit: { country_code: "US", subdivision_name: "Michigan", municipality: "Detroit" },
   "salt-lake-city": { country_code: "US", subdivision_name: "Utah", municipality: "Salt Lake City" },
   milwaukee: { country_code: "US", subdivision_name: "Wisconsin", municipality: "Milwaukee" },
-  "los-angeles": { country_code: "US", subdivision_name: "California", municipality: "Los Angeles" }
+  "los-angeles": { country_code: "US", subdivision_name: "California", municipality: "Los Angeles" },
+  toronto: { country_code: "CA", subdivision_name: "Ontario", municipality: "Toronto" },
+  montreal: { country_code: "CA", subdivision_name: "Quebec", municipality: "Montreal" },
+  vancouver: { country_code: "CA", subdivision_name: "British Columbia", municipality: "Vancouver" }
 };
 
 function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train", options = {}) {
@@ -371,6 +450,7 @@ const CITIES = [
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.acTransit], fallbackLine: "AC Transit", label: "NextBus AC Transit", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.vta], fallbackLine: "VTA", label: "NextBus VTA", defaultType: "tram" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.samTrans], fallbackLine: "SamTrans", label: "NextBus SamTrans", defaultType: "bus" },
+      ...BAY_AREA_511_SOURCES,
       ...createMobilityDatabaseSourceBundle("bay-area", "Bay Area Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Transitous", label: "Transitous GTFS-RT" }
@@ -466,6 +546,7 @@ const CITIES = [
     provider: "multi",
     bbox: [34.45, -118.90, 33.65, -117.60],
     sources: [
+      ...LA_METRO_JSON_SOURCES,
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.laMetro], fallbackLine: "LA Metro", label: "NextBus LA Metro", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.bigBlueBus], fallbackLine: "Big Blue Bus", label: "NextBus Big Blue Bus", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: [NEXTBUS_ENDPOINTS.culverCityBus], fallbackLine: "Culver CityBus", label: "NextBus Culver CityBus", defaultType: "bus" },
@@ -481,6 +562,7 @@ const CITIES = [
     bbox: [42.55, -83.40, 42.20, -82.90],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: DETROIT_DDOT_ENDPOINTS, fallbackLine: "DDOT", label: "DDOT GTFS-RT", defaultType: "bus" },
+      { provider: "gtfsrt-protobuf", endpoints: DETROIT_DDOT_ALT_ENDPOINTS, fallbackLine: "DDOT", label: "DDOT GTFS-RT (official)", defaultType: "bus" },
       ...createMobilityDatabaseSourceBundle("detroit", "Detroit Transit", "bus"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Detroit Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
@@ -492,9 +574,41 @@ const CITIES = [
     bbox: [40.92, -112.20, 40.45, -111.70],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: UTA_ENDPOINTS, fallbackLine: "UTA", label: "UTA GTFS-RT", defaultType: "tram" },
+      { provider: "gtfsrt-protobuf", endpoints: UTA_ALT_ENDPOINTS, fallbackLine: "UTA", label: "UTA GTFS-RT (data.rideuta.com)", defaultType: "tram" },
       ...createMobilityDatabaseSourceBundle("salt-lake-city", "Salt Lake Transit"),
       { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
       { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Salt Lake Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
+    ]
+  },
+  {
+    id: "toronto",
+    provider: "multi",
+    bbox: [43.90, -79.70, 43.50, -79.05],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: TTC_ENDPOINTS, fallbackLine: "TTC", label: "TTC GTFS-RT", defaultType: "bus" },
+      ...createMobilityDatabaseSourceBundle("toronto", "Toronto Transit"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Toronto Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
+    ]
+  },
+  {
+    id: "montreal",
+    provider: "multi",
+    bbox: [45.75, -74.30, 45.35, -73.40],
+    sources: [
+      ...STM_SOURCES,
+      ...createMobilityDatabaseSourceBundle("montreal", "Montreal Transit"),
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Montreal Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
+    ]
+  },
+  {
+    id: "vancouver",
+    provider: "multi",
+    bbox: [49.45, -123.30, 49.00, -122.60],
+    sources: [
+      ...TRANSLINK_SOURCES,
+      ...createMobilityDatabaseSourceBundle("vancouver", "Vancouver Transit"),
+      { provider: "gtfsrt-protobuf", endpoints: TRANSITOUS_ENDPOINTS, fallbackLine: "Vancouver Transit", label: "Transitous GTFS-RT", defaultType: "bus" }
     ]
   }
 ];
@@ -654,6 +768,57 @@ function parseWmataJson(data, city, source = {}) {
     .filter(Boolean);
 }
 
+function extractCoordinates(value = {}) {
+  const lat = Number(
+    value.lat
+    ?? value.latitude
+    ?? value.Latitude
+    ?? value.LATITUDE
+    ?? value.PositionLat
+    ?? value.position?.latitude
+    ?? value.position?.lat
+  );
+  const lon = Number(
+    value.lon
+    ?? value.lng
+    ?? value.longitude
+    ?? value.Longitude
+    ?? value.LONGITUDE
+    ?? value.PositionLon
+    ?? value.position?.longitude
+    ?? value.position?.lon
+  );
+  return { lat, lon };
+}
+
+function extractRouteId(row, defaultLine) {
+  return row.routeTag
+    || row.route
+    || row.Route
+    || row.route_id
+    || row.routeId
+    || row.line
+    || row.Line
+    || row.TrainTypeName
+    || row.trip?.routeId
+    || defaultLine;
+}
+
+/**
+ * Return the first array found on a known list of property keys, or the value
+ * itself when the root payload is already an array.
+ * @param {any} value Response payload to inspect.
+ * @param {string[]} keys Candidate property names that may contain entity arrays.
+ * @returns {any[]} The first matching array, or an empty array when none exist.
+ */
+function extractArrayByKeys(value, keys = []) {
+  for (const key of keys) {
+    const candidate = value?.[key];
+    if (Array.isArray(candidate)) return candidate;
+  }
+  return Array.isArray(value) ? value : [];
+}
+
 function extractGeoRows(value, maxRows = 400) {
   const rows = [];
   const queue = [value];
@@ -670,10 +835,13 @@ function extractGeoRows(value, maxRows = 400) {
       continue;
     }
 
-    const lat = Number(current.lat ?? current.latitude ?? current.Latitude ?? current.LATITUDE ?? current.PositionLat);
-    const lon = Number(current.lon ?? current.lng ?? current.longitude ?? current.Longitude ?? current.LONGITUDE ?? current.PositionLon);
+    const { lat, lon } = extractCoordinates(current);
     if (Number.isFinite(lat) && Number.isFinite(lon)) {
-      rows.push(current);
+      rows.push({
+        ...current,
+        lat,
+        lon
+      });
     }
 
     for (const nested of Object.values(current)) {
@@ -687,13 +855,12 @@ function extractGeoRows(value, maxRows = 400) {
 function parseGenericGeoJson(data, city, defaultLine, source = {}) {
   return extractGeoRows(data)
     .map((row, index) => {
-      const lat = Number(row.lat ?? row.latitude ?? row.Latitude ?? row.LATITUDE ?? row.PositionLat);
-      const lon = Number(row.lon ?? row.lng ?? row.longitude ?? row.Longitude ?? row.LONGITUDE ?? row.PositionLon);
+      const { lat, lon } = extractCoordinates(row);
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
-      const speedMs = Number(row.speed ?? row.Speed ?? row.Velocity);
+      const speedMs = Number(row.speed ?? row.Speed ?? row.Velocity ?? row.position?.speed);
       const mph = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_MPH_FACTOR) : null;
-      const line = row.routeTag || row.route || row.Route || row.route_id || row.line || row.Line || row.TrainTypeName || defaultLine;
-      const label = row.id || row.vehicle?.id || row.VehicleID || row.vehicleNo || row.TrainNo || row.trainNumber || `${index + 1}`;
+      const line = extractRouteId(row, defaultLine);
+      const label = row.id || row.vehicle?.id || row.vehicle?.label || row.VehicleID || row.vehicleNo || row.TrainNo || row.trainNumber || `${index + 1}`;
       const state = String(row.current_status || row.VehicleStatus || row.state || row.State || "In service");
       const type = inferVehicleType(
         source.defaultType,
@@ -708,7 +875,7 @@ function parseGenericGeoJson(data, city, defaultLine, source = {}) {
         line: String(line || defaultLine),
         label: String(label),
         status: mph != null ? `${mph} mph` : String(row.status || row.Status || "Active"),
-        heading: toHeadingCardinal(Number(row.heading ?? row.bearing ?? row.Bearing ?? row.DirectionDeg)),
+        heading: toHeadingCardinal(Number(row.heading ?? row.bearing ?? row.Bearing ?? row.DirectionDeg ?? row.position?.bearing)),
         speed: mph,
         speedUnit: "mph",
         state,
@@ -799,6 +966,51 @@ function parseGtfsRealtime(buffer, city, fallbackLine, source = {}) {
         speedUnit: "km/h",
         state,
         type: inferVehicleType(source.defaultType, line, tripId, state),
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
+  const entities = extractArrayByKeys(data, ["entity", "data", "vehicle_positions", "vehiclePositions", "vehicles"]);
+  if (!entities.length) {
+    return parseGenericGeoJson(data, city, fallbackLine, source);
+  }
+
+  return entities
+    .map((entity, index) => {
+      const vehicle = entity?.vehicle || entity;
+      const position = vehicle?.position || entity?.position || {};
+      const { lat, lon } = extractCoordinates({
+        ...entity,
+        ...vehicle,
+        position
+      });
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+
+      const routeId = vehicle?.trip?.routeId ?? entity?.route_id ?? entity?.routeId ?? vehicle?.routeId;
+      const tripId = vehicle?.trip?.tripId ?? entity?.trip_id ?? entity?.tripId;
+      const vehicleMeta = vehicle?.vehicle && typeof vehicle.vehicle === "object" ? vehicle.vehicle : {};
+      const vehicleId = vehicleMeta.id ?? vehicle?.id ?? entity?.id;
+      const label = vehicleMeta.label ?? vehicle?.label ?? vehicleId ?? tripId ?? "Vehicle";
+      const currentStatus = vehicle?.currentStatus ?? entity?.current_status ?? entity?.currentStatus;
+      const occupancyStatus = vehicle?.occupancyStatus ?? entity?.occupancy_status ?? entity?.occupancyStatus;
+      const speedMs = Number(position.speed ?? vehicle?.speed ?? entity?.speed);
+      const speedKmh = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_KMH_FACTOR) : null;
+      const ts = Number(vehicle?.timestamp?.low ?? vehicle?.timestamp ?? entity?.timestamp?.low ?? entity?.timestamp);
+
+      return {
+        id: String(vehicleId || tripId || `${lat},${lon},${index}`),
+        line: String(routeId || fallbackLine),
+        label: String(label),
+        status: ts ? `Updated ${new Date(ts * 1000).toISOString().slice(11, 16)} UTC` : String(currentStatus || "Active"),
+        heading: toHeadingCardinal(Number(position.bearing ?? vehicle?.bearing ?? entity?.bearing)),
+        speed: speedKmh,
+        speedUnit: "km/h",
+        state: String(occupancyStatus || currentStatus || "In service"),
+        type: inferVehicleType(source.defaultType, routeId, tripId, currentStatus, occupancyStatus),
         lat,
         lon
       };
@@ -952,6 +1164,11 @@ async function loadSourceData(city, source) {
   if (source.provider === "wmata-json") {
     const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseWmataJson(data, city, source);
+  }
+
+  if (source.provider === "gtfsrt-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseGtfsRealtimeJson(data, city, source.fallbackLine || city.id, source);
   }
 
   if (source.provider === "mobilitydb-gtfsrt-discovery") {
