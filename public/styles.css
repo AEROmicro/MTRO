@@ -167,14 +167,14 @@ body {
 
 .fares-toggle {
   position: fixed;
-  right: 0;
+  left: 0;
   top: 120px;
   z-index: 1100;
   border: 1px solid #3a3a3a;
   background: #111;
   color: #fff;
-  border-right: 0;
-  border-radius: 8px 0 0 8px;
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
   padding: 10px 12px;
   font-weight: 600;
   cursor: pointer;
@@ -182,22 +182,22 @@ body {
 
 .fares-drawer {
   position: fixed;
-  right: -320px;
+  left: -320px;
   top: 78px;
   width: 320px;
   max-width: 85vw;
   height: calc(100% - 78px);
   background: #111;
   color: #fff;
-  border-left: 1px solid #2a2a2a;
+  border-right: 1px solid #2a2a2a;
   padding: 16px;
   overflow-y: auto;
   z-index: 1099;
-  transition: right 0.2s ease;
+  transition: left 0.2s ease;
 }
 
 .fares-drawer.is-open {
-  right: 0;
+  left: 0;
 }
 
 .fares-drawer h2 {
