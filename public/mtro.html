@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MTRO</title>
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" type="image/png" href="/MTRO_FAV.png">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><img src="/MTRO_LOGO.png" alt="MTRO logo" class="brand-logo" /></div>
+      <div class="topbar-right">
+        <div class="time-weather" aria-live="polite">
+          <div class="timebar">
+            <span id="utcTime">UTC --:--:--</span>
+            <span id="localTime">Local --:--:--</span>
+          </div>
+        </div>
+        <nav class="controls" aria-label="Transit filter controls">
+          <label for="languageSelect" id="languageLabel">Language</label>
+          <select id="languageSelect" aria-label="Language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="zh">中文</option>
+          </select>
+          <label for="citySearch">Search</label>
+          <input id="citySearch" list="cityOptions" type="search" placeholder="Search city" autocomplete="off" />
+          <datalist id="cityOptions"></datalist>
+          <label for="citySelect">City</label>
+          <select id="citySelect"></select>
+          <label for="snapshotSelect">Time</label>
+          <select id="snapshotSelect">
+            <option value="live">Live</option>
+          </select>
+          <button id="refreshBtn" type="button">Refresh</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section id="map" aria-label="Transit map"></section>
+      <aside class="panel">
+        <h1 id="panelTitle">Live Transit Positions</h1>
+        <p id="status" class="status">Loading data…</p>
+        <section class="legend" aria-label="Transit type legend">
+          <strong>Transit types</strong>
+          <ul id="modeLegend" class="mode-legend"></ul>
+        </section>
+        <ul id="trainList" class="train-list"></ul>
+      </aside>
+    </main>
+    <button id="faresToggle" class="fares-toggle" type="button" aria-controls="faresDrawer" aria-expanded="false">Fares</button>
+    <aside id="faresDrawer" class="fares-drawer" aria-label="Fare prices" aria-hidden="true">
+      <h2 id="faresTitle">Fares</h2>
+      <ul id="faresList" class="fares-list"></ul>
+    </aside>
+
+    <script src="/vendor/leaflet/leaflet.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

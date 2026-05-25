@@ -1,0 +1,1389 @@
+// Cloudflare Pages requires non-static Next.js routes to run on the Edge runtime.
+export const runtime = "edge";
+import gtfsRealtimeBindings from "gtfs-realtime-bindings";
+
+const { transit_realtime: GtfsRealtime } = gtfsRealtimeBindings;
+
+/**
+ * Parse API keys from one or more env-style inputs and return unique values.
+ * @param {...string} rawValues Comma/whitespace separated key strings.
+ * @returns {string[]} Unique, trimmed API keys.
+ */
+function parseApiKeys(...rawValues) {
+  return [...new Set(
+    rawValues
+      .flatMap((value) => String(value || "").split(/[,\s]+/))
+      .map((value) => value.trim())
+      .filter(Boolean)
+  )];
+}
+
+function trimTrailingSlashes(value) {
+  return String(value || "").replace(/\/+$/, "");
+}
+
+const WMATA_DEMO_API_KEY = String(process.env.WMATA_DEMO_API_KEY || "e13626d03d8e4c03ac07f95541b3091b").trim();
+const WMATA_API_KEYS = parseApiKeys(
+  process.env.WMATA_API_KEYS,
+  process.env.WMATA_API_KEY,
+  process.env.WMATA_PRIMARY_KEY,
+  process.env.WMATA_SECONDARY_KEY
+);
+const WMATA_EFFECTIVE_API_KEYS = WMATA_API_KEYS.length
+  ? WMATA_API_KEYS
+  : parseApiKeys(WMATA_DEMO_API_KEY);
+const MTA_API_KEY = process.env.MTA_API_KEY;
+const MOBILITY_DATABASE_API_BASE = trimTrailingSlashes(process.env.MOBILITY_DATABASE_API_BASE || "https://api.mobilitydatabase.org");
+const MOBILITY_DATABASE_ACCESS_TOKEN = String(process.env.MOBILITY_DATABASE_ACCESS_TOKEN || "").trim();
+const MOBILITY_DATABASE_REFRESH_TOKEN = String(process.env.MOBILITY_DATABASE_REFRESH_TOKEN || "").trim();
+const MOBILITY_DATABASE_MAX_ENDPOINTS = Math.max(1, Math.min(25, Number(process.env.MOBILITY_DATABASE_MAX_ENDPOINTS) || 25));
+const DEFAULT_MOBILITY_DATABASE_TOKEN_EXPIRY_SECONDS = 3600;
+const MOBILITY_DATABASE_TOKEN_REUSE_BUFFER_MS = 15000;
+
+const AMTRAKER_ENDPOINTS = [
+  "https://api-v3.amtraker.com/v3/trains",
+  "https://api-v3.amtraker.com/v1/trains"
+];
+const MBTA_GTFSRT_ENDPOINTS = [
+  "https://cdn.mbta.com/realtime/VehiclePositions.pb"
+];
+const SOUND_TRANSIT_ENDPOINTS = [
+  "https://api.pugetsound.onebusaway.org/api/gtfs_realtime/vehicle-positions-for-agency/40.pb"
+];
+const SOUND_TRANSIT_ALT_ENDPOINTS = [
+  "https://api.soundtransit.org/gtfsrealtime/vehicle-positions.pb"
+];
+const MARTA_ENDPOINTS = [
+  "https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/vehicle",
+  "https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/Vehicle/VehiclePositions.pb"
+];
+const VRE_ENDPOINTS = ["https://www.vre.org/gtfs-rt/vehiclepositions"];
+const RTD_ENDPOINTS = ["https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb"];
+const RTD_ALT_ENDPOINTS = [
+  "https://gtfsrt.rtd-denver.com/gtfsrt/VehiclePosition"
+];
+const WMATA_RAIL_ENDPOINTS = [
+  "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions.pb",
+  "https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions"
+];
+const WMATA_BUS_ENDPOINTS = [
+  "https://api.wmata.com/gtfs/bus-vehicle-positions.pb",
+  "https://api.wmata.com/gtfs/bus-vehicle-positions"
+];
+const WMATA_TRAIN_POSITIONS_ENDPOINTS = [
+  "https://api.wmata.com/TrainPositions/TrainPositions?contentType=json",
+  "https://api.wmata.com/TrainPositions/TrainPositions"
+];
+const WMATA_TRAIN_POSITION_SOURCES = WMATA_EFFECTIVE_API_KEYS.map((key) => ({
+  provider: "wmata-json",
+  endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
+  label: "WMATA TrainPositions",
+  headers: { api_key: key }
+}));
+const WMATA_RAIL_SOURCES = WMATA_EFFECTIVE_API_KEYS.map((key) => ({
+  provider: "gtfsrt-protobuf",
+  endpoints: WMATA_RAIL_ENDPOINTS,
+  fallbackLine: "WMATA",
+  label: "WMATA Rail GTFS-RT",
+  defaultType: "train",
+  headers: { api_key: key }
+}));
+const WMATA_BUS_SOURCES = WMATA_EFFECTIVE_API_KEYS.map((key) => ({
+  provider: "gtfsrt-protobuf",
+  endpoints: WMATA_BUS_ENDPOINTS,
+  fallbackLine: "WMATA Bus",
+  label: "WMATA Bus GTFS-RT",
+  defaultType: "bus",
+  headers: { api_key: key }
+}));
+const MCTS_ENDPOINTS = [
+  "https://realtime.ridemcts.com/gtfsrt/vehicles"
+];
+const MTA_NYCT_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
+];
+const MTA_BUS_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mta-bus",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mta-bus%2Fgtfs",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mta-bus/gtfs"
+];
+const MTA_LIRR_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr%2Fgtfs-lirr",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr/gtfs-lirr"
+];
+const MTA_MNR_ENDPOINTS = [
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr%2Fgtfs-mnr",
+  "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr/gtfs-mnr"
+];
+const MTA_HEADERS = MTA_API_KEY ? { "x-api-key": MTA_API_KEY } : undefined;
+const SEPTA_RAIL_GTFSRT_ENDPOINTS = [
+  "https://www3.septa.org/gtfsrt/septarail-pa-us/Vehicle/rtVehiclePosition.pb"
+];
+const SEPTA_BUS_GTFSRT_ENDPOINTS = [
+  "https://www3.septa.org/gtfsrt/septa-pa-us/Vehicle/rtVehiclePosition.pb"
+];
+// Try canonical endpoint first, then common URL variants observed during upstream URL migrations.
+const TRANSITOUS_ENDPOINTS = [
+  "https://api.transitous.org/gtfs-rt/",
+  "https://api.transitous.org/gtfs-rt",
+  "https://transitous.org/gtfs-rt/"
+];
+const NEXTBUS_BASE_URLS = [
+  "https://retro.umoiq.com/service/publicJSONFeed?command=vehicleLocations&a=",
+  "https://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a="
+];
+const nextBusUrls = (agencyTag) => NEXTBUS_BASE_URLS.map(
+  (baseUrl) => `${baseUrl}${encodeURIComponent(agencyTag)}&t=0`
+);
+const NEXTBUS_ENDPOINTS = {
+  dcCirculator: nextBusUrls("dc-circulator"),
+  fairfaxConnector: nextBusUrls("fairfax"),
+  mbta: nextBusUrls("mbta"),
+  septa: nextBusUrls("septa"),
+  sfmuni: nextBusUrls("sf-muni"),
+  acTransit: nextBusUrls("actransit"),
+  vta: nextBusUrls("vta"),
+  samTrans: nextBusUrls("samtrans"),
+  cta: nextBusUrls("cta"),
+  pace: nextBusUrls("pace"),
+  nycMtaBus: nextBusUrls("mta")
+};
+const TTC_ENDPOINTS = [
+  "https://bustime.ttc.ca/gtfsrt/vehicles"
+];
+// Pin to a known-good MAWI snapshot so mirror URLs stay deterministic across deployments.
+// Validated on 2026-05-25 against Bonny94ITA/MAWI for city stop/station coverage.
+// Update this value (or MAWI_MIRROR_COMMIT env var) after validating a newer MAWI commit.
+const MAWI_MIRROR_DEFAULT_COMMIT = "83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426";
+const MAWI_MIRROR_COMMIT = String(process.env.MAWI_MIRROR_COMMIT || MAWI_MIRROR_DEFAULT_COMMIT).trim() || MAWI_MIRROR_DEFAULT_COMMIT;
+// Path notes:
+// - articles1: published MAWI article batch directory
+// - no_trf: MAWI's no-translation-processing variant
+// - en: English city dataset subfolder
+const MAWI_MIRROR_BASE = `https://raw.githubusercontent.com/Bonny94ITA/MAWI/${MAWI_MIRROR_COMMIT}/results/articles1/no_trf/en`;
+const buildMawiCityMirrorUrl = (cityName) => `${MAWI_MIRROR_BASE}/${encodeURIComponent(cityName)}/${encodeURIComponent(cityName)}.geojson`;
+const BAY_AREA_MIRROR_REPO = "msu-econ-data-analytics/course-materials";
+// Validated on 2026-05-25; this commit contains the BART 2019 station GeoJSON snapshot.
+const BAY_AREA_MIRROR_COMMIT = "001e6a2d75a998b161251d582c7323f55af1ec78";
+const BAY_AREA_MIRROR_PATH = "lecture-slides/12-Spatial/data/bart_stations_2019.geojson";
+const BAY_AREA_OPEN_DATA_MIRROR_ENDPOINTS = [
+  // MAWI does not publish a dedicated "Bay Area" dataset, so keep a BART-focused mirror here.
+  // This dataset is a 2019 station snapshot; station-level layouts may lag current system changes.
+  `https://raw.githubusercontent.com/${BAY_AREA_MIRROR_REPO}/${BAY_AREA_MIRROR_COMMIT}/${BAY_AREA_MIRROR_PATH}`
+];
+const CHICAGO_OPEN_DATA_MIRROR_ENDPOINTS = [
+  buildMawiCityMirrorUrl("Chicago")
+];
+const LONDON_OPEN_DATA_MIRROR_ENDPOINTS = [
+  buildMawiCityMirrorUrl("London")
+];
+const AMSTERDAM_OPEN_DATA_MIRROR_ENDPOINTS = [
+  buildMawiCityMirrorUrl("Amsterdam")
+];
+const PARIS_OPEN_DATA_MIRROR_ENDPOINTS = [
+  buildMawiCityMirrorUrl("Paris")
+];
+const LOS_ANGELES_OPEN_DATA_MIRROR_ENDPOINTS = [
+  buildMawiCityMirrorUrl("Los Angeles")
+];
+const BERLIN_OPEN_DATA_MIRROR_ENDPOINTS = [
+  buildMawiCityMirrorUrl("Berlin")
+];
+const MADRID_OPEN_DATA_MIRROR_ENDPOINTS = [
+  buildMawiCityMirrorUrl("Madrid")
+];
+const MOBILITY_DATABASE_CITY_FILTERS = {
+  "washington-dc": { country_code: "US", subdivision_name: "District of Columbia", municipality: "Washington" },
+  "new-york-city": { country_code: "US", subdivision_name: "New York", municipality: "New York" },
+  boston: { country_code: "US", subdivision_name: "Massachusetts", municipality: "Boston" },
+  philadelphia: { country_code: "US", subdivision_name: "Pennsylvania", municipality: "Philadelphia" },
+  "bay-area": { country_code: "US", subdivision_name: "California", municipality: "San Francisco" },
+  seattle: { country_code: "US", subdivision_name: "Washington", municipality: "Seattle" },
+  atlanta: { country_code: "US", subdivision_name: "Georgia", municipality: "Atlanta" },
+  denver: { country_code: "US", subdivision_name: "Colorado", municipality: "Denver" },
+  chicago: { country_code: "US", subdivision_name: "Illinois", municipality: "Chicago" },
+  milwaukee: { country_code: "US", subdivision_name: "Wisconsin", municipality: "Milwaukee" },
+  toronto: { country_code: "CA", subdivision_name: "Ontario", municipality: "Toronto" },
+  london: { country_code: "GB", subdivision_name: "England", municipality: "London" },
+  amsterdam: { country_code: "NL", subdivision_name: "Noord-Holland", municipality: "Amsterdam" },
+  paris: { country_code: "FR", subdivision_name: "Île-de-France", municipality: "Paris" },
+  "los-angeles": { country_code: "US", subdivision_name: "California", municipality: "Los Angeles" },
+  berlin: { country_code: "DE", subdivision_name: "Berlin", municipality: "Berlin" },
+  madrid: { country_code: "ES", subdivision_name: "Community of Madrid", municipality: "Madrid" }
+};
+
+function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train", options = {}) {
+  const locationFilter = MOBILITY_DATABASE_CITY_FILTERS[cityId];
+  if (!locationFilter) return null; // Intentionally optional so unsupported cities can skip discovery.
+  const filterMode = options.officialFilter || "official-only";
+  const mobilityDatabase = {
+    ...locationFilter,
+    entity_types: "vp",
+    ...(options.mobilityDatabase || {})
+  };
+  if (options.includeMunicipality === false) {
+    delete mobilityDatabase.municipality;
+  }
+  if (filterMode === "official-only") {
+    mobilityDatabase.is_official = true;
+  } else if (filterMode === "community-only") {
+    mobilityDatabase.is_official = false;
+  } else if (filterMode === "official-and-community") {
+    delete mobilityDatabase.is_official;
+  } else {
+    mobilityDatabase.is_official = true;
+  }
+  return {
+    provider: "mobilitydb-gtfsrt-discovery",
+    label: options.label || "Mobility Database GTFS-RT",
+    fallbackLine,
+    defaultType,
+    mobilityDatabase
+  };
+}
+
+function createMobilityDatabaseSourceBundle(cityId, fallbackLine, defaultType = "train") {
+  const citySource = createMobilityDatabaseSource(cityId, fallbackLine, defaultType);
+  if (!citySource) return [];
+  return [
+    citySource,
+    createMobilityDatabaseSource(cityId, fallbackLine, defaultType, {
+      label: "Mobility Database GTFS-RT (regional official)",
+      includeMunicipality: false
+    }),
+    createMobilityDatabaseSource(cityId, fallbackLine, defaultType, {
+      label: "Mobility Database GTFS-RT (regional community)",
+      includeMunicipality: false,
+      officialFilter: "official-and-community"
+    })
+  ].filter(Boolean);
+}
+
+function createTransitousSource(fallbackLine, defaultType = "train") {
+  return {
+    provider: "gtfsrt-protobuf",
+    endpoints: TRANSITOUS_ENDPOINTS,
+    fallbackLine,
+    label: defaultType === "bus" ? "Transitous GTFS-RT (bus)" : "Transitous GTFS-RT",
+    defaultType
+  };
+}
+
+const CITIES = [
+  {
+    id: "washington-dc",
+    provider: "multi",
+    bbox: [39.18, -77.50, 38.65, -76.73],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: VRE_ENDPOINTS, fallbackLine: "VRE", label: "VRE GTFS-RT" },
+      ...WMATA_TRAIN_POSITION_SOURCES,
+      ...WMATA_RAIL_SOURCES,
+      ...WMATA_BUS_SOURCES,
+      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.dcCirculator, fallbackLine: "DC Circulator", label: "NextBus DC Circulator", defaultType: "bus" },
+      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.fairfaxConnector, fallbackLine: "Fairfax Connector", label: "NextBus Fairfax Connector", defaultType: "bus" },
+      ...createMobilityDatabaseSourceBundle("washington-dc", "Washington Transit"),
+      ...createMobilityDatabaseSourceBundle("washington-dc", "Washington Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Transitous"),
+      createTransitousSource("Washington Transit", "bus")
+    ]
+  },
+  {
+    id: "new-york-city",
+    provider: "multi",
+    bbox: [41.05, -74.35, 40.45, -73.60],
+    sources: [
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_NYCT_ENDPOINTS,
+        fallbackLine: "MTA Subway",
+        label: "MTA NYCT GTFS-RT",
+        headers: MTA_HEADERS
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_BUS_ENDPOINTS,
+        fallbackLine: "MTA Bus",
+        label: "MTA Bus GTFS-RT",
+        defaultType: "bus",
+        headers: MTA_HEADERS
+      },
+      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.nycMtaBus, fallbackLine: "MTA Bus", label: "NextBus NYC MTA Bus", defaultType: "bus" },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_LIRR_ENDPOINTS,
+        fallbackLine: "LIRR",
+        label: "MTA LIRR GTFS-RT",
+        headers: MTA_HEADERS
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MTA_MNR_ENDPOINTS,
+        fallbackLine: "Metro-North",
+        label: "MTA MNR GTFS-RT",
+        headers: MTA_HEADERS
+      },
+      ...createMobilityDatabaseSourceBundle("new-york-city", "New York Transit"),
+      ...createMobilityDatabaseSourceBundle("new-york-city", "New York Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Transitous"),
+      createTransitousSource("New York Transit", "bus")
+    ]
+  },
+  {
+    id: "boston",
+    provider: "multi",
+    bbox: [42.58, -71.35, 42.17, -70.85],
+    sources: [
+      { provider: "mbta-json", endpoints: ["https://api-v3.mbta.com/vehicles"], label: "MBTA" },
+      { provider: "gtfsrt-protobuf", endpoints: MBTA_GTFSRT_ENDPOINTS, fallbackLine: "MBTA", label: "MBTA GTFS-RT" },
+      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.mbta, fallbackLine: "MBTA", label: "NextBus MBTA", defaultType: "bus" },
+      ...createMobilityDatabaseSourceBundle("boston", "Boston Transit"),
+      ...createMobilityDatabaseSourceBundle("boston", "Boston Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Transitous"),
+      createTransitousSource("Boston Transit", "bus")
+    ]
+  },
+  {
+    id: "philadelphia",
+    provider: "multi",
+    bbox: [40.08, -75.35, 39.83, -74.95],
+    sources: [
+      { provider: "septa-json", endpoints: ["https://www3.septa.org/api/TrainView/index.php"], label: "SEPTA" },
+      { provider: "gtfsrt-protobuf", endpoints: SEPTA_RAIL_GTFSRT_ENDPOINTS, fallbackLine: "SEPTA Rail", label: "SEPTA Rail GTFS-RT" },
+      { provider: "gtfsrt-protobuf", endpoints: SEPTA_BUS_GTFSRT_ENDPOINTS, fallbackLine: "SEPTA", label: "SEPTA GTFS-RT" },
+      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.septa, fallbackLine: "SEPTA", label: "NextBus SEPTA", defaultType: "bus" },
+      ...createMobilityDatabaseSourceBundle("philadelphia", "Philadelphia Transit"),
+      ...createMobilityDatabaseSourceBundle("philadelphia", "Philadelphia Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Transitous"),
+      createTransitousSource("Philadelphia Transit", "bus")
+    ]
+  },
+  {
+    id: "bay-area",
+    provider: "multi",
+    bbox: [38.10, -122.75, 37.20, -121.60],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: BAY_AREA_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Bay Area Transit",
+        label: "Bay Area Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "seattle",
+    provider: "multi",
+    bbox: [47.90, -122.55, 47.35, -121.95],
+    sources: [
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: SOUND_TRANSIT_ENDPOINTS,
+        fallbackLine: "Sound Transit",
+        label: "Sound Transit GTFS-RT"
+      },
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: SOUND_TRANSIT_ALT_ENDPOINTS,
+        fallbackLine: "Sound Transit",
+        label: "Sound Transit GTFS-RT (alt)"
+      },
+      ...createMobilityDatabaseSourceBundle("seattle", "Seattle Transit"),
+      ...createMobilityDatabaseSourceBundle("seattle", "Seattle Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Seattle Rail"),
+      createTransitousSource("Seattle Transit", "bus")
+    ]
+  },
+  {
+    id: "atlanta",
+    provider: "multi",
+    bbox: [34.15, -84.70, 33.40, -83.95],
+    sources: [
+      {
+        provider: "gtfsrt-protobuf",
+        endpoints: MARTA_ENDPOINTS,
+        fallbackLine: "MARTA",
+        label: "MARTA GTFS-RT"
+      },
+      ...createMobilityDatabaseSourceBundle("atlanta", "Atlanta Transit"),
+      ...createMobilityDatabaseSourceBundle("atlanta", "Atlanta Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Atlanta Rail"),
+      createTransitousSource("Atlanta Transit", "bus")
+    ]
+  },
+  {
+    id: "denver",
+    provider: "multi",
+    bbox: [40.10, -105.30, 39.55, -104.70],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: RTD_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT" },
+      { provider: "gtfsrt-protobuf", endpoints: RTD_ALT_ENDPOINTS, fallbackLine: "RTD", label: "RTD GTFS-RT (alt)" },
+      ...createMobilityDatabaseSourceBundle("denver", "Denver Transit"),
+      ...createMobilityDatabaseSourceBundle("denver", "Denver Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Transitous"),
+      createTransitousSource("Denver Transit", "bus")
+    ]
+  },
+  {
+    id: "chicago",
+    provider: "multi",
+    bbox: [42.15, -88.10, 41.60, -87.45],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: CHICAGO_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Chicago Transit",
+        label: "Chicago Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "milwaukee",
+    provider: "multi",
+    bbox: [43.25, -88.20, 42.85, -87.75],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: MCTS_ENDPOINTS, fallbackLine: "MCTS", label: "MCTS GTFS-RT", defaultType: "bus" },
+      ...createMobilityDatabaseSourceBundle("milwaukee", "Milwaukee Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Milwaukee Rail"),
+      createTransitousSource("Milwaukee Transit", "bus")
+    ]
+  },
+  {
+    id: "toronto",
+    provider: "multi",
+    bbox: [43.90, -79.70, 43.50, -79.05],
+    sources: [
+      { provider: "gtfsrt-protobuf", endpoints: TTC_ENDPOINTS, fallbackLine: "TTC", label: "TTC GTFS-RT", defaultType: "bus" },
+      ...createMobilityDatabaseSourceBundle("toronto", "Toronto Transit"),
+      ...createMobilityDatabaseSourceBundle("toronto", "Toronto Transit", "bus"),
+      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
+      createTransitousSource("Toronto Transit"),
+      createTransitousSource("Toronto Transit", "bus")
+    ]
+  },
+  {
+    id: "london",
+    provider: "multi",
+    bbox: [51.70, -0.55, 51.28, 0.30],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: LONDON_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "London Transit",
+        label: "London Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "amsterdam",
+    provider: "multi",
+    bbox: [52.50, 4.65, 52.25, 5.10],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: AMSTERDAM_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Amsterdam Transit",
+        label: "Amsterdam Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "paris",
+    provider: "multi",
+    bbox: [49.10, 2.15, 48.70, 2.55],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: PARIS_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Paris Transit",
+        label: "Paris Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "los-angeles",
+    provider: "multi",
+    bbox: [34.35, -118.70, 33.65, -117.90],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: LOS_ANGELES_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Los Angeles Transit",
+        label: "Los Angeles Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "berlin",
+    provider: "multi",
+    bbox: [52.70, 13.00, 52.30, 13.80],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: BERLIN_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Berlin Transit",
+        label: "Berlin Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "madrid",
+    provider: "multi",
+    bbox: [40.60, -3.90, 40.25, -3.50],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: MADRID_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Madrid Transit",
+        label: "Madrid Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  }
+];
+
+const jsonHeaders = {
+  "content-type": "application/json; charset=UTF-8",
+  "cache-control": "public, max-age=15, s-maxage=15, stale-while-revalidate=30"
+};
+
+const CACHE_TTL_MS = 15000;
+const MIN_STOPPED_THRESHOLD_SECONDS = 15;
+const MS_TO_MPH_FACTOR = 2.23694;
+const MS_TO_KMH_FACTOR = 3.6;
+const MPH_PER_KMH = 0.621371;
+const COORDINATE_PRECISION = 6;
+
+const cityCache = globalThis.__mtroCityCache || new Map();
+const inflightByCity = globalThis.__mtroInflightByCity || new Map();
+const mobilityDatabaseTokenState = globalThis.__mtroMobilityDatabaseTokenState || { token: null, expiresAt: 0 };
+
+globalThis.__mtroCityCache = cityCache;
+globalThis.__mtroInflightByCity = inflightByCity;
+globalThis.__mtroMobilityDatabaseTokenState = mobilityDatabaseTokenState;
+
+function inBbox(lat, lon, bbox) {
+  return lat <= bbox[0] && lon >= bbox[1] && lat >= bbox[2] && lon <= bbox[3];
+}
+
+function toHeadingCardinal(degrees) {
+  if (!Number.isFinite(degrees)) return null;
+  const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  const normalized = ((degrees % 360) + 360) % 360;
+  return dirs[Math.round(normalized / 22.5) % dirs.length];
+}
+
+const VEHICLE_TYPE_ALIASES = {
+  rail: "train",
+  streetcar: "tram",
+  light_rail: "tram",
+  "light-rail": "tram"
+};
+const TRAM_KEYWORDS = /(streetcar|tram|trolley|light rail|lightrail|lrt|muni)/;
+const BUS_KEYWORDS = /(bus|coach|circulator|metrobus|rapidbus|brt|mcts|cta|ac transit)/;
+const TRAIN_KEYWORDS = /(train|rail|subway|bart|metra|amtrak|lirr|mnr|vre|marta|septa|wmata|sound transit|rtd|metro rail|mta nyct)/;
+
+function normalizeVehicleType(type) {
+  if (!type) return null;
+  const normalized = String(type).trim().toLowerCase();
+  if (VEHICLE_TYPE_ALIASES[normalized]) return VEHICLE_TYPE_ALIASES[normalized];
+  if (["train", "bus", "tram", "other", "station"].includes(normalized)) return normalized;
+  return null;
+}
+
+function inferVehicleType(defaultType, ...values) {
+  const explicit = normalizeVehicleType(defaultType);
+  if (explicit) return explicit;
+  const text = values
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+    .join(" ");
+  if (!text) return "other";
+  if (TRAM_KEYWORDS.test(text)) return "tram";
+  if (BUS_KEYWORDS.test(text)) return "bus";
+  if (TRAIN_KEYWORDS.test(text)) return "train";
+  return "other";
+}
+
+function parseAmtraker(data, city) {
+  const rows = Array.isArray(data) ? data : Object.values(data || {}).flat();
+  return rows
+    .map((row) => {
+      if (!row || typeof row !== "object") return null;
+      const lat = Number(row.lat ?? row.latitude);
+      const lon = Number(row.lon ?? row.lng ?? row.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+      return {
+        id: String(row.trainID ?? row.train_id ?? row.id ?? `${lat},${lon}`),
+        line: String(row.routeName || row.route_name || row.route || row.trainNum || row.train_num || "Amtrak"),
+        label: String(row.trainNum || row.trainID || row.train_num || row.train_id || "Train"),
+        status: row.velocity != null ? `${Math.round(Number(row.velocity))} mph` : "Active",
+        heading: toHeadingCardinal(Number(row.heading)),
+        speed: row.velocity != null ? Math.round(Number(row.velocity)) : null,
+        speedUnit: "mph",
+        state: String(row.trainState || row.train_state || "Active"),
+        type: "train",
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseMbta(data, city, source = {}) {
+  const rows = Array.isArray(data?.data) ? data.data : [];
+  return rows
+    .map((row) => {
+      const attrs = row?.attributes || {};
+      const lat = Number(attrs.latitude);
+      const lon = Number(attrs.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+      const routeId = row?.relationships?.route?.data?.id;
+      const type = inferVehicleType(
+        source.defaultType,
+        attrs.vehicle_type,
+        attrs.route_type,
+        routeId,
+        attrs.label,
+        attrs.current_status
+      );
+      return {
+        id: String(row?.id || `${lat},${lon}`),
+        line: String(routeId || attrs.label || "MBTA"),
+        label: String(attrs.label || attrs.vehicle_label || row?.id || "Vehicle"),
+        status: String(attrs.current_status || "Active"),
+        heading: toHeadingCardinal(Number(attrs.bearing)),
+        speed: Number.isFinite(Number(attrs.speed)) ? Math.round(Number(attrs.speed) * MS_TO_MPH_FACTOR) : null,
+        speedUnit: "mph",
+        state: String(attrs.occupancy_status || "In service"),
+        type,
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseWmataJson(data, city, source = {}) {
+  const rows = Array.isArray(data?.TrainPositions) ? data.TrainPositions : [];
+  return rows
+    .map((row, index) => {
+      if (!row || typeof row !== "object") return null;
+      const lat = Number(row.Lat ?? row.lat ?? row.latitude);
+      const lon = Number(row.Lon ?? row.lon ?? row.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+      const trainId = row.TrainId ?? row.TrainNumber ?? row.Car ?? row.ID;
+      const lineCode = row.LineCode ?? row.ServiceType ?? "WMATA";
+      const atStopSeconds = Number(row.SecondsAtLocation);
+      const destination = row.DestinationStationName ?? row.DestinationStationCode ?? row.ServiceType ?? "In service";
+      const status = Number.isFinite(atStopSeconds) && atStopSeconds >= MIN_STOPPED_THRESHOLD_SECONDS
+        ? `Stopped ${Math.round(atStopSeconds)}s`
+        : "Active";
+
+      return {
+        id: String(trainId || `wmata-unknown-${index}`),
+        line: String(lineCode),
+        label: String(trainId || "WMATA train"),
+        status,
+        heading: null,
+        speed: null,
+        speedUnit: "mph",
+        state: String(destination),
+        type: inferVehicleType(source.defaultType, lineCode, destination),
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+function extractCoordinates(value = {}) {
+  const coordinatePair = Array.isArray(value.coordinates)
+    ? value.coordinates
+    : Array.isArray(value.geometry?.coordinates)
+      ? value.geometry.coordinates
+      : null;
+  const coordinateLon = Array.isArray(coordinatePair) ? Number(coordinatePair[0]) : NaN;
+  const coordinateLat = Array.isArray(coordinatePair) ? Number(coordinatePair[1]) : NaN;
+
+  const lat = Number(
+    value.lat
+    ?? value.latitude
+    ?? value.stop_lat
+    ?? value.stopLat
+    ?? value.gtfs_latitude
+    ?? value.geo_point_2d?.lat
+    ?? value.coordonnees_geo?.lat
+    ?? value.Latitude
+    ?? value.LATITUDE
+    ?? value.PositionLat
+    ?? (Number.isFinite(coordinateLat) ? coordinateLat : undefined)
+    ?? value.position?.latitude
+    ?? value.position?.lat
+  );
+  const lon = Number(
+    value.lon
+    ?? value.lng
+    ?? value.longitude
+    ?? value.stop_lon
+    ?? value.stopLon
+    ?? value.gtfs_longitude
+    ?? value.geo_point_2d?.lon
+    ?? value.coordonnees_geo?.lon
+    ?? value.Longitude
+    ?? value.LONGITUDE
+    ?? value.PositionLon
+    ?? (Number.isFinite(coordinateLon) ? coordinateLon : undefined)
+    ?? value.position?.longitude
+    ?? value.position?.lon
+  );
+  return { lat, lon };
+}
+
+function extractRouteId(row, defaultLine) {
+  return row.routeTag
+    || row.route
+    || row.Route
+    || row.rt
+    || row.route_name
+    || row.RouteName
+    || row.name
+    || row.route_id
+    || row.routeId
+    || row.line
+    || row.Line
+    || row.TrainTypeName
+    || row.trip?.routeId
+    || defaultLine;
+}
+
+/**
+ * Return the first array found on a known list of property keys, or the value
+ * itself when the root payload is already an array.
+ * @param {any} value Response payload to inspect.
+ * @param {string[]} keys Candidate property names that may contain entity arrays.
+ * @returns {any[]} The first matching array, or an empty array when none exist.
+ */
+function extractArrayByKeys(value, keys = []) {
+  for (const key of keys) {
+    const candidate = value?.[key];
+    if (Array.isArray(candidate)) return candidate;
+  }
+  return Array.isArray(value) ? value : [];
+}
+
+function extractGeoRows(value, maxRows = 400) {
+  const rows = [];
+  const queue = [value];
+  const seen = new Set();
+
+  while (queue.length && rows.length < maxRows) {
+    const current = queue.shift();
+    if (!current || typeof current !== "object") continue;
+    if (seen.has(current)) continue;
+    seen.add(current);
+
+    if (Array.isArray(current)) {
+      for (const item of current) queue.push(item);
+      continue;
+    }
+
+    const { lat, lon } = extractCoordinates(current);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      rows.push({
+        ...current,
+        lat,
+        lon
+      });
+    }
+
+    for (const nested of Object.values(current)) {
+      if (nested && typeof nested === "object") queue.push(nested);
+    }
+  }
+
+  return rows;
+}
+
+function parseGenericGeoJson(data, city, defaultLine, source = {}) {
+  return extractGeoRows(data)
+    .map((row, index) => {
+      const { lat, lon } = extractCoordinates(row);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+      const speedMs = Number(row.speed ?? row.Speed ?? row.Velocity ?? row.position?.speed);
+      const mph = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_MPH_FACTOR) : null;
+      const line = extractRouteId(row, defaultLine);
+      const label = row.id
+        || row.vid
+        || row.rn
+        || row.vehicle?.id
+        || row.vehicle?.label
+        || row.VehicleID
+        || row.vehicleNo
+        || row.TrainNo
+        || row.trainNumber
+        || `${index + 1}`;
+      const state = String(row.current_status || row.VehicleStatus || row.state || row.State || "In service");
+      const type = inferVehicleType(
+        source.defaultType,
+        row.vehicleType,
+        row.routeType,
+        line,
+        row.dirTag,
+        state
+      );
+      return {
+        id: String(row.id || row.vid || row.rn || row.VehicleID || row.vehicleNo || row.trainNo || `${lat},${lon},${index}`),
+        line: String(line || defaultLine),
+        label: String(label),
+        status: mph != null ? `${mph} mph` : String(row.status || row.Status || "Active"),
+        heading: toHeadingCardinal(Number(row.heading ?? row.bearing ?? row.Bearing ?? row.DirectionDeg ?? row.position?.bearing)),
+        speed: mph,
+        speedUnit: "mph",
+        state,
+        type,
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Parse NextBus vehicleLocations JSON into normalized train rows.
+ * @param {any} data NextBus payload with a top-level `vehicle` array.
+ * @param {{bbox:number[]}} city City config with bounding box filter.
+ * @param {string} defaultLine Fallback route label for missing routeTag values.
+ * @returns {Array<object>} Normalized train-style rows.
+ */
+function parseNextBus(data, city, defaultLine, source = {}) {
+  const rows = Array.isArray(data?.vehicle) ? data.vehicle : [];
+  return rows
+    .map((row, index) => {
+      const lat = Number(row?.lat);
+      const lon = Number(row?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+      const speedKmHr = Number(row?.speedKmHr);
+      const speedMph = Number.isFinite(speedKmHr) ? Math.round(speedKmHr * MPH_PER_KMH) : null;
+      const secsSinceReport = Number(row?.secsSinceReport);
+      const status = Number.isFinite(speedMph)
+        ? `${speedMph} mph`
+        : Number.isFinite(secsSinceReport)
+          ? `Reported ${secsSinceReport} sec ago`
+          : "Active";
+
+      const line = String(row?.routeTag || defaultLine);
+      const state = String(row?.dirTag || "In service");
+      return {
+        id: String(row?.id || `nextbus-${lat.toFixed(COORDINATE_PRECISION)}-${lon.toFixed(COORDINATE_PRECISION)}-${index}`),
+        line,
+        label: String(row?.id || row?.vehicleLabel || `${index + 1}`),
+        status,
+        heading: toHeadingCardinal(Number(row?.heading)),
+        speed: speedMph,
+        speedUnit: "mph",
+        state,
+        type: inferVehicleType(source.defaultType, line, state),
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseGtfsRealtime(buffer, city, fallbackLine, source = {}) {
+  let feed;
+  try {
+    feed = GtfsRealtime.FeedMessage.decode(new Uint8Array(buffer));
+  } catch {
+    throw new Error("Invalid GTFS-RT protobuf payload");
+  }
+
+  const entities = Array.isArray(feed?.entity) ? feed.entity : [];
+  return entities
+    .map((entity, index) => {
+      const vehicle = entity?.vehicle;
+      const position = vehicle?.position;
+      if (!position) return null;
+      const lat = Number(position.latitude);
+      const lon = Number(position.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+
+      const speedMs = Number(position.speed);
+      const speedKmh = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_KMH_FACTOR) : null;
+      const routeId = vehicle?.trip?.routeId;
+      const tripId = vehicle?.trip?.tripId;
+      const vehicleId = vehicle?.vehicle?.id || vehicle?.vehicle?.label;
+      const ts = Number(vehicle?.timestamp?.low ?? vehicle?.timestamp);
+
+      const line = String(routeId || fallbackLine);
+      const state = String(vehicle?.currentStatus || "In service");
+      return {
+        id: String(entity?.id || vehicleId || tripId || `${lat},${lon},${index}`),
+        line,
+        label: String(vehicle?.vehicle?.label || vehicleId || tripId || "Vehicle"),
+        status: ts ? `Updated ${new Date(ts * 1000).toISOString().slice(11, 16)} UTC` : "Active",
+        heading: toHeadingCardinal(Number(position.bearing)),
+        speed: speedKmh,
+        speedUnit: "km/h",
+        state,
+        type: inferVehicleType(source.defaultType, line, tripId, state),
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
+  const entities = extractArrayByKeys(data, ["entity", "data", "vehicle_positions", "vehiclePositions", "vehicles"]);
+  if (!entities.length) {
+    return parseGenericGeoJson(data, city, fallbackLine, source);
+  }
+
+  /**
+   * Extract balanced JSON snippets from arbitrary text by matching nested pairs.
+   * @param {string} text Input text that may contain JSON objects/arrays.
+   * @param {string} startChar Opening delimiter (`{` or `[`).
+   * @param {string} endChar Closing delimiter (`}` or `]`).
+   * @param {number} limit Maximum number of snippets to return (default 20; stops extraction early to avoid heavy scans on malformed/very large pages).
+   * @returns {string[]} Candidate JSON snippets preserving nested structure.
+   */
+  function extractBalancedJsonSnippets(text, startChar, endChar, limit = 20) {
+    const snippets = [];
+    for (let i = 0; i < text.length && snippets.length < limit; i += 1) {
+      if (text[i] !== startChar) continue;
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+      for (let j = i; j < text.length; j += 1) {
+        const ch = text[j];
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (ch === "\\") {
+            escaped = true;
+            continue;
+          }
+          if (ch === "\"") inString = false;
+          continue;
+        }
+        if (ch === "\"") {
+          inString = true;
+          continue;
+        }
+        if (ch === startChar) depth += 1;
+        if (ch === endChar) {
+          depth -= 1;
+          if (depth === 0) {
+            snippets.push(text.slice(i, j + 1));
+            break;
+          }
+        }
+      }
+    }
+    return snippets;
+  }
+
+  /**
+   * Parse scraped text payloads into JSON.
+   * Attempts direct JSON parsing first, then falls back to balanced snippet
+   * extraction so HTML/script wrappers can still yield valid JSON payloads.
+   * @param {string} raw Raw response text from a scraped endpoint.
+   * @returns {any} Parsed JSON payload.
+   */
+  function parseScrapedPayload(raw) {
+    if (typeof raw !== "string") {
+      throw new Error(`Expected string payload but received ${typeof raw}`);
+    }
+    const text = raw.trim();
+    if (!text) throw new Error("Scraped payload is empty");
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      // Fall through to balanced JSON extraction attempts.
+    }
+
+    const candidates = [
+      ...extractBalancedJsonSnippets(text, "[", "]"),
+      ...extractBalancedJsonSnippets(text, "{", "}")
+    ];
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // Try next balanced snippet candidate.
+      }
+    }
+    throw new Error("Unable to parse scraped payload as JSON");
+  }
+
+  function parseScrapedTransitRows(raw, city, source = {}) {
+    const payload = parseScrapedPayload(raw);
+    const fallbackLine = source.fallbackLine || city.id;
+    if (Array.isArray(payload?.vehicle)) {
+      return parseNextBus(payload, city, fallbackLine, source);
+    }
+    if (Array.isArray(payload?.TrainPositions)) {
+      return parseWmataJson(payload, city, source);
+    }
+
+    const amtrakRows = parseAmtraker(payload, city);
+    if (amtrakRows.length) return amtrakRows;
+
+    const gtfsJsonRows = parseGtfsRealtimeJson(payload, city, fallbackLine, source);
+    if (gtfsJsonRows.length) return gtfsJsonRows;
+
+    return parseGenericGeoJson(payload, city, fallbackLine, source);
+  }
+
+  return entities
+    .map((entity, index) => {
+      const vehicle = entity?.vehicle || entity;
+      const position = vehicle?.position || entity?.position || {};
+      const { lat, lon } = extractCoordinates({
+        ...entity,
+        ...vehicle,
+        position
+      });
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
+
+      const routeId = vehicle?.trip?.routeId ?? entity?.route_id ?? entity?.routeId ?? vehicle?.routeId;
+      const tripId = vehicle?.trip?.tripId ?? entity?.trip_id ?? entity?.tripId;
+      const vehicleMeta = vehicle?.vehicle && typeof vehicle.vehicle === "object" ? vehicle.vehicle : {};
+      const vehicleId = vehicleMeta.id ?? vehicle?.id ?? entity?.id;
+      const label = vehicleMeta.label ?? vehicle?.label ?? vehicleId ?? tripId ?? "Vehicle";
+      const currentStatus = vehicle?.currentStatus ?? entity?.current_status ?? entity?.currentStatus;
+      const occupancyStatus = vehicle?.occupancyStatus ?? entity?.occupancy_status ?? entity?.occupancyStatus;
+      const speedMs = Number(position.speed ?? vehicle?.speed ?? entity?.speed);
+      const speedKmh = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_KMH_FACTOR) : null;
+      const ts = Number(vehicle?.timestamp?.low ?? vehicle?.timestamp ?? entity?.timestamp?.low ?? entity?.timestamp);
+
+      return {
+        id: String(vehicleId || tripId || `${lat},${lon},${index}`),
+        line: String(routeId || fallbackLine),
+        label: String(label),
+        status: ts ? `Updated ${new Date(ts * 1000).toISOString().slice(11, 16)} UTC` : String(currentStatus || "Active"),
+        heading: toHeadingCardinal(Number(position.bearing ?? vehicle?.bearing ?? entity?.bearing)),
+        speed: speedKmh,
+        speedUnit: "km/h",
+        state: String(occupancyStatus || currentStatus || "In service"),
+        type: inferVehicleType(source.defaultType, routeId, tripId, currentStatus, occupancyStatus),
+        lat,
+        lon
+      };
+    })
+    .filter(Boolean);
+}
+
+
+function dedupeTrains(rows) {
+  const out = [];
+  const seen = new Set();
+  for (const row of rows) {
+    const key = `${row.id}|${row.line}|${row.label}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
+async function fetchWithTimeout(url, init = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      cache: "no-store",
+      headers: {
+        accept: "application/json;q=1.0, application/protobuf;q=0.95, application/vnd.google.protobuf;q=0.95, application/octet-stream;q=0.9, text/xml;q=0.8, */*;q=0.5",
+        ...(init.headers || {})
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchFirst(urls, fetcher) {
+  let lastError;
+  for (const url of urls) {
+    try {
+      return await fetcher(url);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("No data source available");
+}
+
+async function getMobilityDatabaseAccessToken() {
+  if (MOBILITY_DATABASE_ACCESS_TOKEN) return MOBILITY_DATABASE_ACCESS_TOKEN;
+  const now = Date.now();
+  if (mobilityDatabaseTokenState.token && mobilityDatabaseTokenState.expiresAt > now + MOBILITY_DATABASE_TOKEN_REUSE_BUFFER_MS) {
+    return mobilityDatabaseTokenState.token;
+  }
+  if (!MOBILITY_DATABASE_REFRESH_TOKEN) return null;
+
+  const response = await fetchWithTimeout(`${MOBILITY_DATABASE_API_BASE}/v1/tokens`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ refresh_token: MOBILITY_DATABASE_REFRESH_TOKEN })
+  });
+  const payload = await response.json();
+  const token = String(payload?.access_token || payload?.accessToken || payload?.token || "").trim();
+  if (!token) {
+    const payloadKeys = payload && typeof payload === "object" ? Object.keys(payload).join(", ") : "none";
+    throw new Error(`Mobility Database token exchange completed but returned no valid access token (response fields: ${payloadKeys || "none"})`);
+  }
+  const expiresInSeconds = Number(payload?.expires_in ?? payload?.expiresIn);
+  const tokenLifetimeSeconds = expiresInSeconds > 0 ? expiresInSeconds : DEFAULT_MOBILITY_DATABASE_TOKEN_EXPIRY_SECONDS;
+  mobilityDatabaseTokenState.token = token;
+  mobilityDatabaseTokenState.expiresAt = now + tokenLifetimeSeconds * 1000;
+  return token;
+}
+
+function extractMobilityDatabaseFeedUrl(feed) {
+  // The catalog can expose producer URLs via multiple field names across versions/export formats.
+  const candidates = [
+    feed?.source_info?.producer_url,
+    feed?.sourceInfo?.producerUrl,
+    feed?.producer_url,
+    feed?.producerUrl,
+    feed?.url,
+    feed?.urls?.producer,
+    feed?.urls?.realtime
+  ];
+  return candidates.find((value) => typeof value === "string" && /^https?:\/\//i.test(value)) || null;
+}
+
+async function discoverMobilityDatabaseEndpoints(source = {}) {
+  const token = await getMobilityDatabaseAccessToken();
+  if (!token) {
+    throw new Error("Mobility Database source is not configured: set MOBILITY_DATABASE_ACCESS_TOKEN or MOBILITY_DATABASE_REFRESH_TOKEN");
+  }
+  const filters = source.mobilityDatabase || {};
+  const query = new URLSearchParams();
+  query.set("entity_types", String(filters.entity_types || "vp"));
+  query.set("limit", String(MOBILITY_DATABASE_MAX_ENDPOINTS));
+  if (filters.country_code) query.set("country_code", String(filters.country_code));
+  if (filters.subdivision_name) query.set("subdivision_name", String(filters.subdivision_name));
+  if (filters.municipality) query.set("municipality", String(filters.municipality));
+  if (typeof filters.is_official === "boolean") query.set("is_official", String(filters.is_official));
+  const url = `${MOBILITY_DATABASE_API_BASE}/v1/gtfs_rt_feeds?${query.toString()}`;
+  const response = await fetchWithTimeout(url, { headers: { authorization: `Bearer ${token}` } });
+  const payload = await response.json();
+  let feeds = [];
+  if (Array.isArray(payload)) {
+    feeds = payload;
+  } else if (Array.isArray(payload?.results)) {
+    feeds = payload.results;
+  } else if (Array.isArray(payload?.feeds)) {
+    feeds = payload.feeds;
+  }
+  const uniqueUrls = new Set();
+  for (const feed of feeds) {
+    const urlValue = extractMobilityDatabaseFeedUrl(feed);
+    if (!urlValue) continue;
+    uniqueUrls.add(urlValue);
+    if (uniqueUrls.size >= MOBILITY_DATABASE_MAX_ENDPOINTS) break;
+  }
+  return [...uniqueUrls];
+}
+
+async function loadSourceData(city, source) {
+  const endpoints = Array.isArray(source?.endpoints) ? source.endpoints : [];
+  const requestInit = source?.headers ? { headers: source.headers } : {};
+
+  if (source.provider === "amtraker") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseAmtraker(data, city);
+  }
+
+  if (source.provider === "mbta-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseMbta(data, city, source);
+  }
+
+  if (source.provider === "septa-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseGenericGeoJson(data, city, "SEPTA", source);
+  }
+
+  if (source.provider === "nextbus-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseNextBus(data, city, source.fallbackLine || city.id, source);
+  }
+
+  if (source.provider === "wmata-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseWmataJson(data, city, source);
+  }
+
+  if (source.provider === "gtfsrt-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
+    return parseGtfsRealtimeJson(data, city, source.fallbackLine || city.id, source);
+  }
+
+  if (source.provider === "web-scrape-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).text());
+    return parseScrapedTransitRows(data, city, source);
+  }
+
+  if (source.provider === "mobilitydb-gtfsrt-discovery") {
+    const discoveredEndpoints = await discoverMobilityDatabaseEndpoints(source);
+    if (!discoveredEndpoints.length) return [];
+    const settled = await Promise.allSettled(
+      discoveredEndpoints.map(async (url) => {
+        const buffer = await (await fetchWithTimeout(url, requestInit)).arrayBuffer();
+        return parseGtfsRealtime(buffer, city, source.fallbackLine || city.id, source);
+      })
+    );
+    const rows = settled
+      .filter((entry) => entry.status === "fulfilled")
+      .flatMap((entry) => entry.value);
+    // Keep partial successes so one broken discovered feed does not block all discovered feeds.
+    if (rows.length || settled.every((entry) => entry.status === "fulfilled")) return rows;
+    const firstError = settled.find((entry) => entry.status === "rejected");
+    throw firstError?.reason || new Error("Failed to fetch Mobility Database GTFS-RT feeds");
+  }
+
+  if (source.provider === "gtfsrt-protobuf") {
+    const buffer = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).arrayBuffer());
+    return parseGtfsRealtime(buffer, city, source.fallbackLine || city.id, source);
+  }
+
+  throw new Error(`Unsupported provider: ${source.provider}`);
+}
+
+async function loadCityData(city) {
+  const sources = Array.isArray(city.sources)
+    ? city.sources.filter(Boolean)
+    : [];
+  if (!sources.length) {
+    return {
+      trains: [],
+      message: "No supported data source is configured for this selection."
+    };
+  }
+
+  const settled = await Promise.all(
+    sources.map(async (source) => {
+      try {
+        const trains = await loadSourceData(city, source);
+        return { ok: true, source, trains };
+      } catch (error) {
+        return { ok: false, source, error };
+      }
+    })
+  );
+
+  const trains = dedupeTrains(
+    settled
+      .filter((entry) => entry.ok)
+      .flatMap((entry) => entry.trains)
+  );
+  const successfulSources = settled
+    .filter((entry) => entry.ok && entry.trains.length)
+    .map((entry) => entry.source.label || entry.source.provider);
+  const failedCount = settled.filter((entry) => !entry.ok).length;
+
+  if (trains.length) {
+    const sourceLabel = successfulSources.length
+      ? successfulSources.join(", ")
+      : "available feeds";
+    const warning = failedCount ? " Some feeds are temporarily unavailable." : "";
+    return {
+      trains,
+      message: `Loaded ${trains.length} vehicle positions from ${sourceLabel}.${warning}`
+    };
+  }
+
+  if (failedCount === sources.length) {
+    return {
+      trains: [],
+      message: "All configured vehicle feeds are temporarily unavailable for this area."
+    };
+  }
+
+  if (failedCount > 0) {
+    return {
+      trains: [],
+      message: "Some vehicle feeds are temporarily unavailable for this area."
+    };
+  }
+
+  return {
+    trains: [],
+    message: "No vehicle positions found for this area."
+  };
+}
+
+function getCached(cityId) {
+  const cached = cityCache.get(cityId);
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+    cityCache.delete(cityId);
+    return null;
+  }
+  return cached.payload;
+}
+
+async function loadCityDataCached(city) {
+  const cached = getCached(city.id);
+  if (cached) return cached;
+
+  const inflight = inflightByCity.get(city.id);
+  if (inflight) return inflight;
+
+  const promise = loadCityData(city)
+    .then((payload) => {
+      cityCache.set(city.id, { timestamp: Date.now(), payload });
+      return payload;
+    })
+    .finally(() => {
+      inflightByCity.delete(city.id);
+    });
+
+  inflightByCity.set(city.id, promise);
+  return promise;
+}
+
+export async function GET(request) {
+  const url = new URL(request.url);
+  const cityId = url.searchParams.get("city");
+  const city = CITIES.find((entry) => entry.id === cityId) || CITIES[0];
+
+  try {
+    const payload = await loadCityDataCached(city);
+    return new Response(JSON.stringify(payload), { status: 200, headers: jsonHeaders });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ trains: [], message: `Unable to load train data: ${error.message}` }),
+      { status: 200, headers: jsonHeaders }
+    );
+  }
+}
