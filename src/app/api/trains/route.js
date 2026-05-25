@@ -768,6 +768,50 @@ function parseWmataJson(data, city, source = {}) {
     .filter(Boolean);
 }
 
+function extractCoordinates(value = {}) {
+  const lat = Number(
+    value.lat
+    ?? value.latitude
+    ?? value.Latitude
+    ?? value.LATITUDE
+    ?? value.PositionLat
+    ?? value.position?.latitude
+    ?? value.position?.lat
+  );
+  const lon = Number(
+    value.lon
+    ?? value.lng
+    ?? value.longitude
+    ?? value.Longitude
+    ?? value.LONGITUDE
+    ?? value.PositionLon
+    ?? value.position?.longitude
+    ?? value.position?.lon
+  );
+  return { lat, lon };
+}
+
+function extractRouteId(row, defaultLine) {
+  return row.routeTag
+    || row.route
+    || row.Route
+    || row.route_id
+    || row.routeId
+    || row.line
+    || row.Line
+    || row.TrainTypeName
+    || row.trip?.routeId
+    || defaultLine;
+}
+
+function extractArrayByKeys(value, keys = []) {
+  for (const key of keys) {
+    const candidate = value?.[key];
+    if (Array.isArray(candidate)) return candidate;
+  }
+  return Array.isArray(value) ? value : [];
+}
+
 function extractGeoRows(value, maxRows = 400) {
   const rows = [];
   const queue = [value];
@@ -784,8 +828,7 @@ function extractGeoRows(value, maxRows = 400) {
       continue;
     }
 
-    const lat = Number(current.lat ?? current.latitude ?? current.Latitude ?? current.LATITUDE ?? current.PositionLat ?? current.position?.latitude ?? current.position?.lat);
-    const lon = Number(current.lon ?? current.lng ?? current.longitude ?? current.Longitude ?? current.LONGITUDE ?? current.PositionLon ?? current.position?.longitude ?? current.position?.lon);
+    const { lat, lon } = extractCoordinates(current);
     if (Number.isFinite(lat) && Number.isFinite(lon)) {
       rows.push({
         ...current,
@@ -807,12 +850,11 @@ function extractGeoRows(value, maxRows = 400) {
 function parseGenericGeoJson(data, city, defaultLine, source = {}) {
   return extractGeoRows(data)
     .map((row, index) => {
-      const lat = Number(row.lat ?? row.latitude ?? row.Latitude ?? row.LATITUDE ?? row.PositionLat ?? row.position?.latitude ?? row.position?.lat);
-      const lon = Number(row.lon ?? row.lng ?? row.longitude ?? row.Longitude ?? row.LONGITUDE ?? row.PositionLon ?? row.position?.longitude ?? row.position?.lon);
+      const { lat, lon } = extractCoordinates(row);
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
       const speedMs = Number(row.speed ?? row.Speed ?? row.Velocity ?? row.position?.speed);
       const mph = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_MPH_FACTOR) : null;
-      const line = row.routeTag || row.route || row.Route || row.route_id || row.routeId || row.line || row.Line || row.TrainTypeName || row.trip?.routeId || defaultLine;
+      const line = extractRouteId(row, defaultLine);
       const label = row.id || row.vehicle?.id || row.vehicle?.label || row.VehicleID || row.vehicleNo || row.TrainNo || row.trainNumber || `${index + 1}`;
       const state = String(row.current_status || row.VehicleStatus || row.state || row.State || "In service");
       const type = inferVehicleType(
@@ -927,19 +969,7 @@ function parseGtfsRealtime(buffer, city, fallbackLine, source = {}) {
 }
 
 function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
-  const entities = Array.isArray(data?.entity)
-    ? data.entity
-    : Array.isArray(data?.data)
-      ? data.data
-      : Array.isArray(data?.vehicle_positions)
-        ? data.vehicle_positions
-        : Array.isArray(data?.vehiclePositions)
-          ? data.vehiclePositions
-          : Array.isArray(data?.vehicles)
-            ? data.vehicles
-      : Array.isArray(data)
-        ? data
-        : [];
+  const entities = extractArrayByKeys(data, ["entity", "data", "vehicle_positions", "vehiclePositions", "vehicles"]);
   if (!entities.length) {
     return parseGenericGeoJson(data, city, fallbackLine, source);
   }
@@ -948,8 +978,11 @@ function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
     .map((entity, index) => {
       const vehicle = entity?.vehicle || entity;
       const position = vehicle?.position || entity?.position || {};
-      const lat = Number(position.latitude ?? position.lat ?? vehicle?.latitude ?? entity?.latitude);
-      const lon = Number(position.longitude ?? position.lon ?? vehicle?.longitude ?? entity?.longitude);
+      const { lat, lon } = extractCoordinates({
+        ...entity,
+        ...vehicle,
+        position
+      });
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || !inBbox(lat, lon, city.bbox)) return null;
 
       const routeId = vehicle?.trip?.routeId ?? entity?.route_id ?? entity?.routeId ?? vehicle?.routeId;
