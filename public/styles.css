@@ -167,14 +167,13 @@ body {
 
 .fares-toggle {
   position: fixed;
-  left: 0;
-  top: 120px;
+  right: 16px;
+  bottom: 56px;
   z-index: 1100;
   border: 1px solid #3a3a3a;
   background: #111;
   color: #fff;
-  border-left: 0;
-  border-radius: 0 8px 8px 0;
+  border-radius: 8px;
   padding: 10px 12px;
   font-weight: 600;
   cursor: pointer;
@@ -270,7 +269,8 @@ body {
   }
 
   .fares-toggle {
-    top: 132px;
+    right: 12px;
+    bottom: 48px;
   }
 
   .fares-drawer {
