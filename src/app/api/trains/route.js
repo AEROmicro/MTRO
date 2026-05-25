@@ -556,7 +556,7 @@ const CITIES = [
     provider: "multi",
     bbox: [52.50, 4.65, 52.25, 5.10],
     sources: [
-      { provider: "web-scrape-json", endpoints: AMSTERDAM_OVAPI_ENDPOINTS, fallbackLine: "GVB", label: "OVapi Vehicle Positions", defaultType: "bus" },
+      { provider: "gtfsrt-json", endpoints: AMSTERDAM_OVAPI_ENDPOINTS, fallbackLine: "GVB", label: "OVapi Vehicle Positions", defaultType: "bus" },
       { provider: "gtfsrt-json", endpoints: AMSTERDAM_STOPS_ENDPOINTS, fallbackLine: "GVB", label: "Amsterdam Stops Dataset", defaultType: "station" },
       ...createMobilityDatabaseSourceBundle("amsterdam", "Amsterdam Transit"),
       ...createMobilityDatabaseSourceBundle("amsterdam", "Amsterdam Transit", "bus"),
@@ -575,7 +575,7 @@ const CITIES = [
     provider: "multi",
     bbox: [49.10, 2.15, 48.70, 2.55],
     sources: [
-      { provider: "web-scrape-json", endpoints: PARIS_IDFM_STOPS_ENDPOINTS, fallbackLine: "IDFM", label: "IDFM Stops", defaultType: "station" },
+      { provider: "gtfsrt-json", endpoints: PARIS_IDFM_STOPS_ENDPOINTS, fallbackLine: "IDFM", label: "IDFM Stops", defaultType: "station" },
       ...createMobilityDatabaseSourceBundle("paris", "Paris Transit"),
       ...createMobilityDatabaseSourceBundle("paris", "Paris Transit", "bus"),
       createMobilityDatabaseSource("paris", "Paris Transit", "bus", {
