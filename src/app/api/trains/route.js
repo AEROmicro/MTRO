@@ -976,7 +976,7 @@ function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
    * @param {string} text Input text that may contain JSON objects/arrays.
    * @param {string} startChar Opening delimiter (`{` or `[`).
    * @param {string} endChar Closing delimiter (`}` or `]`).
-   * @param {number} limit Maximum number of snippets to return (default 20 as a safety cap for large HTML pages).
+   * @param {number} limit Maximum number of snippets to return (default 20; stops extraction early to avoid heavy scans on malformed/very large pages).
    * @returns {string[]} Candidate JSON snippets preserving nested structure.
    */
   function extractBalancedJsonSnippets(text, startChar, endChar, limit = 20) {
@@ -1026,7 +1026,7 @@ function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
    */
   function parseScrapedPayload(raw) {
     if (typeof raw !== "string") {
-      throw new Error("Scraped payload is not text");
+      throw new Error(`Expected string payload but received ${typeof raw}`);
     }
     const text = raw.trim();
     if (!text) throw new Error("Scraped payload is empty");
