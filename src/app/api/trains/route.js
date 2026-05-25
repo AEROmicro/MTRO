@@ -204,14 +204,21 @@ const NEXTBUS_ENDPOINTS = {
 const TTC_ENDPOINTS = [
   "https://bustime.ttc.ca/gtfsrt/vehicles"
 ];
-const TAIPEI_TDX_ENDPOINTS = [
-  "https://tcgbusfs.blob.core.windows.net/blobbus/Vehicle/City/Taipei/Vehicle.json",
-  "https://tcgbusfs.blob.core.windows.net/blobbus/Vehicle/City/NewTaipei/Vehicle.json"
+const BAY_AREA_BART_STATION_ENDPOINTS = [
+  `https://api.bart.gov/api/stn.aspx?cmd=stns&json=y&key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  "https://api.bart.gov/api/stn.aspx?cmd=stns&json=y"
 ];
-const SEOUL_SUBWAY_WEB_SCRAPE_ENDPOINTS = [
-  "https://seoul-subway.vercel.app/api/realtime/Gangnam",
-  "https://seoul-subway.vercel.app/api/realtime/SeoulStation",
-  "https://seoul-subway.vercel.app/api/realtime/HongikUniversity"
+const LONDON_TFL_STOPPOINT_ENDPOINTS = [
+  "https://api.tfl.gov.uk/StopPoint/Mode/tube,overground,dlr,elizabeth-line,tram,bus"
+];
+const PARIS_IDFM_STOPS_ENDPOINTS = [
+  "https://data.iledefrance-mobilites.fr/api/explore/v2.1/catalog/datasets/arrets/records?limit=500"
+];
+const AMSTERDAM_OVAPI_ENDPOINTS = [
+  "https://v0.ovapi.nl/vehiclePositions"
+];
+const AMSTERDAM_STOPS_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Amsterdam/amsterdam-public-transport-stops-dataset/main/stops.geojson"
 ];
 const MOBILITY_DATABASE_CITY_FILTERS = {
   "washington-dc": { country_code: "US", subdivision_name: "District of Columbia", municipality: "Washington" },
@@ -225,12 +232,9 @@ const MOBILITY_DATABASE_CITY_FILTERS = {
   chicago: { country_code: "US", subdivision_name: "Illinois", municipality: "Chicago" },
   milwaukee: { country_code: "US", subdivision_name: "Wisconsin", municipality: "Milwaukee" },
   toronto: { country_code: "CA", subdivision_name: "Ontario", municipality: "Toronto" },
-  tokyo: { country_code: "JP", subdivision_name: "Tokyo", municipality: "Tokyo" },
-  seoul: { country_code: "KR", subdivision_name: "Seoul", municipality: "Seoul" },
-  taipei: { country_code: "TW", subdivision_name: "Taipei", municipality: "Taipei" },
-  osaka: { country_code: "JP", subdivision_name: "Osaka", municipality: "Osaka" },
-  "hong-kong": { country_code: "HK", subdivision_name: "Hong Kong", municipality: "Hong Kong" },
-  singapore: { country_code: "SG", subdivision_name: "Singapore", municipality: "Singapore" }
+  london: { country_code: "GB", subdivision_name: "England", municipality: "London" },
+  amsterdam: { country_code: "NL", subdivision_name: "Noord-Holland", municipality: "Amsterdam" },
+  paris: { country_code: "FR", subdivision_name: "Île-de-France", municipality: "Paris" }
 };
 
 function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train", options = {}) {
@@ -278,15 +282,6 @@ function createMobilityDatabaseSourceBundle(cityId, fallbackLine, defaultType = 
       officialFilter: "official-and-community"
     })
   ].filter(Boolean);
-}
-
-function createCountrywideMobilityDatabaseSource(cityId, fallbackLine, countryCode, defaultType = "train") {
-  return createMobilityDatabaseSource(cityId, fallbackLine, defaultType, {
-    label: "Mobility Database GTFS-RT (country wide)",
-    includeMunicipality: false,
-    officialFilter: "official-and-community",
-    mobilityDatabase: { country_code: countryCode, entity_types: "vp" }
-  });
 }
 
 function createTransitousSource(fallbackLine, defaultType = "train") {
@@ -403,6 +398,7 @@ const CITIES = [
         label: "BART GTFS-RT",
         defaultType: "train"
       },
+      { provider: "gtfsrt-json", endpoints: BAY_AREA_BART_STATION_ENDPOINTS, fallbackLine: "BART", label: "BART Stations", defaultType: "station" },
       { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.sfmuni, fallbackLine: "SF Muni", label: "NextBus SF Muni", defaultType: "tram" },
       { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.acTransit, fallbackLine: "AC Transit", label: "NextBus AC Transit", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.vta, fallbackLine: "VTA", label: "NextBus VTA", defaultType: "tram" },
@@ -524,83 +520,34 @@ const CITIES = [
     ]
   },
   {
-    id: "tokyo",
+    id: "london",
     provider: "multi",
-    bbox: [35.90, 140.10, 35.45, 139.45],
+    bbox: [51.70, -0.55, 51.28, 0.30],
     sources: [
-      ...createMobilityDatabaseSourceBundle("tokyo", "Tokyo Transit"),
-      ...createMobilityDatabaseSourceBundle("tokyo", "Tokyo Transit", "bus"),
-      createCountrywideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP"),
-      createCountrywideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP", "bus"),
-      createTransitousSource("Tokyo Transit"),
-      createTransitousSource("Tokyo Transit", "bus")
+      { provider: "gtfsrt-json", endpoints: LONDON_TFL_STOPPOINT_ENDPOINTS, fallbackLine: "TfL", label: "TfL StopPoint", defaultType: "station" },
+      createTransitousSource("London Transit"),
+      createTransitousSource("London Transit", "bus")
     ]
   },
   {
-    id: "seoul",
+    id: "amsterdam",
     provider: "multi",
-    bbox: [37.75, 127.25, 37.40, 126.75],
+    bbox: [52.50, 4.65, 52.25, 5.10],
     sources: [
-      { provider: "web-scrape-json", endpoints: SEOUL_SUBWAY_WEB_SCRAPE_ENDPOINTS, fallbackLine: "Seoul Metro", label: "Seoul Subway Web Scrape", defaultType: "train" },
-      ...createMobilityDatabaseSourceBundle("seoul", "Seoul Transit"),
-      ...createMobilityDatabaseSourceBundle("seoul", "Seoul Transit", "bus"),
-      createCountrywideMobilityDatabaseSource("seoul", "Seoul Transit", "KR"),
-      createCountrywideMobilityDatabaseSource("seoul", "Seoul Transit", "KR", "bus"),
-      createTransitousSource("Seoul Transit"),
-      createTransitousSource("Seoul Transit", "bus")
+      { provider: "gtfsrt-json", endpoints: AMSTERDAM_OVAPI_ENDPOINTS, fallbackLine: "GVB", label: "OVapi Vehicle Positions", defaultType: "bus" },
+      { provider: "gtfsrt-json", endpoints: AMSTERDAM_STOPS_ENDPOINTS, fallbackLine: "GVB", label: "Amsterdam Stops Dataset", defaultType: "station" },
+      createTransitousSource("Amsterdam Transit"),
+      createTransitousSource("Amsterdam Transit", "bus")
     ]
   },
   {
-    id: "taipei",
+    id: "paris",
     provider: "multi",
-    bbox: [25.30, 121.75, 24.95, 121.35],
+    bbox: [49.10, 2.15, 48.70, 2.55],
     sources: [
-      { provider: "gtfsrt-json", endpoints: TAIPEI_TDX_ENDPOINTS, fallbackLine: "Taipei Bus", label: "Taipei TDX Vehicle Feed", defaultType: "bus" },
-      ...createMobilityDatabaseSourceBundle("taipei", "Taipei Transit"),
-      ...createMobilityDatabaseSourceBundle("taipei", "Taipei Transit", "bus"),
-      createCountrywideMobilityDatabaseSource("taipei", "Taipei Transit", "TW"),
-      createCountrywideMobilityDatabaseSource("taipei", "Taipei Transit", "TW", "bus"),
-      createTransitousSource("Taipei Transit"),
-      createTransitousSource("Taipei Transit", "bus")
-    ]
-  },
-  {
-    id: "osaka",
-    provider: "multi",
-    bbox: [34.85, 135.75, 34.52, 135.30],
-    sources: [
-      ...createMobilityDatabaseSourceBundle("osaka", "Osaka Transit"),
-      ...createMobilityDatabaseSourceBundle("osaka", "Osaka Transit", "bus"),
-      createCountrywideMobilityDatabaseSource("osaka", "Osaka Transit", "JP"),
-      createCountrywideMobilityDatabaseSource("osaka", "Osaka Transit", "JP", "bus"),
-      createTransitousSource("Osaka Transit"),
-      createTransitousSource("Osaka Transit", "bus")
-    ]
-  },
-  {
-    id: "hong-kong",
-    provider: "multi",
-    bbox: [22.56, 114.40, 22.15, 113.84],
-    sources: [
-      ...createMobilityDatabaseSourceBundle("hong-kong", "Hong Kong Transit"),
-      ...createMobilityDatabaseSourceBundle("hong-kong", "Hong Kong Transit", "bus"),
-      createCountrywideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK"),
-      createCountrywideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK", "bus"),
-      createTransitousSource("Hong Kong Transit"),
-      createTransitousSource("Hong Kong Transit", "bus")
-    ]
-  },
-  {
-    id: "singapore",
-    provider: "multi",
-    bbox: [1.48, 104.07, 1.21, 103.60],
-    sources: [
-      ...createMobilityDatabaseSourceBundle("singapore", "Singapore Transit"),
-      ...createMobilityDatabaseSourceBundle("singapore", "Singapore Transit", "bus"),
-      createCountrywideMobilityDatabaseSource("singapore", "Singapore Transit", "SG"),
-      createCountrywideMobilityDatabaseSource("singapore", "Singapore Transit", "SG", "bus"),
-      createTransitousSource("Singapore Transit"),
-      createTransitousSource("Singapore Transit", "bus")
+      { provider: "gtfsrt-json", endpoints: PARIS_IDFM_STOPS_ENDPOINTS, fallbackLine: "IDFM", label: "IDFM Stops", defaultType: "station" },
+      createTransitousSource("Paris Transit"),
+      createTransitousSource("Paris Transit", "bus")
     ]
   }
 ];
@@ -761,12 +708,26 @@ function parseWmataJson(data, city, source = {}) {
 }
 
 function extractCoordinates(value = {}) {
+  const coordinatePair = Array.isArray(value.coordinates)
+    ? value.coordinates
+    : Array.isArray(value.geometry?.coordinates)
+      ? value.geometry.coordinates
+      : null;
+  const coordinateLon = Array.isArray(coordinatePair) ? Number(coordinatePair[0]) : NaN;
+  const coordinateLat = Array.isArray(coordinatePair) ? Number(coordinatePair[1]) : NaN;
+
   const lat = Number(
     value.lat
     ?? value.latitude
+    ?? value.stop_lat
+    ?? value.stopLat
+    ?? value.gtfs_latitude
+    ?? value.geo_point_2d?.lat
+    ?? value.coordonnees_geo?.lat
     ?? value.Latitude
     ?? value.LATITUDE
     ?? value.PositionLat
+    ?? (Number.isFinite(coordinateLat) ? coordinateLat : undefined)
     ?? value.position?.latitude
     ?? value.position?.lat
   );
@@ -774,9 +735,15 @@ function extractCoordinates(value = {}) {
     value.lon
     ?? value.lng
     ?? value.longitude
+    ?? value.stop_lon
+    ?? value.stopLon
+    ?? value.gtfs_longitude
+    ?? value.geo_point_2d?.lon
+    ?? value.coordonnees_geo?.lon
     ?? value.Longitude
     ?? value.LONGITUDE
     ?? value.PositionLon
+    ?? (Number.isFinite(coordinateLon) ? coordinateLon : undefined)
     ?? value.position?.longitude
     ?? value.position?.lon
   );
