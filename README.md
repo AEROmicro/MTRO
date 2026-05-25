@@ -28,7 +28,10 @@ Store keys in environment variables instead of committing them:
 - `WMATA_API_KEYS` (comma-separated) or `WMATA_API_KEY`
 - `WMATA_DEMO_API_KEY` (optional override for the built-in WMATA demo-key fallback used when no WMATA key is provided)
 - `METRA_API_KEYS` (comma-separated) or `METRA_API_KEY`
+- `BAY_AREA_511_API_KEYS` (comma-separated) or `BAY_AREA_511_API_KEY`
 - `HOUSTON_METRO_API_KEYS` (comma-separated) or `HOUSTON_METRO_API_KEY`
+- `STM_API_KEYS` (comma-separated) or `STM_API_KEY`
+- `TRANSLINK_API_KEYS` (comma-separated) or `TRANSLINK_API_KEY`
 - `MOBILITY_DATABASE_ACCESS_TOKEN` (preferred) or `MOBILITY_DATABASE_REFRESH_TOKEN`
 - `MOBILITY_DATABASE_API_BASE` (optional override, defaults to `https://api.mobilitydatabase.org`)
 - `MOBILITY_DATABASE_MAX_ENDPOINTS` (optional cap for discovered GTFS-RT feeds per Mobility Database source, default `25`)
@@ -52,7 +55,7 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - UTC and selected-city local time bar with timezone abbreviation
 - In-session past-data snapshots for quick playback
 - Shared server-side city response caching to reduce duplicate upstream requests
-- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Houston; Detroit; Salt Lake City; Milwaukee; and Los Angeles
+- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Houston; Detroit; Salt Lake City; Milwaukee; Los Angeles; Toronto; Montreal; and Vancouver
 - Multi-source API coverage for these cities including:
   - Mobility Database GTFS-RT feed discovery bundles per city (city official + regional official + regional community sources)
   - VRE GTFS-RT (Washington, DC area commuter rail)
@@ -62,7 +65,7 @@ For deployed environments, set these as platform secrets (for example, in Vercel
   - Keyless D.C. regional alternatives via Mobility Database discovery + NextBus feeds
   - MBTA vehicles API (Boston)
   - MBTA GTFS-RT + NextBus MBTA (Boston)
-  - BART GTFS-RT (Bay Area)
+  - BART GTFS-RT + 511 Regional + 511 SFMTA + 511 AC Transit + 511 VTA + 511 Caltrain (Bay Area)
   - NextBus SF Muni + NextBus AC Transit + NextBus VTA + NextBus SamTrans (Bay Area)
   - Sound Transit GTFS-RT + fallbacks (Seattle)
   - MARTA GTFS-RT + fallbacks (Atlanta)
@@ -71,8 +74,11 @@ For deployed environments, set these as platform secrets (for example, in Vercel
   - Metra GTFS-RT + NextBus CTA + NextBus Pace (Chicago)
   - METRO GTFS-RT + Transitous GTFS-RT (Houston)
   - DDOT GTFS-RT + Transitous GTFS-RT (Detroit)
-  - UTA GTFS-RT + Transitous GTFS-RT (Salt Lake City)
+  - UTA GTFS-RT + data.rideuta.com GTFS-RT + Transitous GTFS-RT (Salt Lake City)
   - MCTS GTFS-RT (Milwaukee)
-  - NextBus LA Metro + NextBus Big Blue Bus + NextBus Culver CityBus + LA Metro GTFS-RT (Los Angeles)
+  - LA Metro API v2 Bus + LA Metro API v2 Rail + NextBus LA Metro + NextBus Big Blue Bus + NextBus Culver CityBus + LA Metro GTFS-RT (Los Angeles)
+  - TTC GTFS-RT + Mobility Database bundles + Amtraker + Transitous GTFS-RT (Toronto)
+  - STM GTFS-RT + Mobility Database bundles + Transitous GTFS-RT (Montreal)
+  - TransLink GTFS-RT + Mobility Database bundles + Transitous GTFS-RT (Vancouver)
   - Amtraker US network
   - Transitous GTFS-RT fallback
