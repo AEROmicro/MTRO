@@ -73,7 +73,8 @@ For deployed environments, set these as platform secrets (for example, in Vercel
   - MCTS GTFS-RT (Milwaukee)
   - TTC GTFS-RT + Mobility Database bundles + Amtraker + Transitous GTFS-RT (Toronto)
   - Mobility Database + Transitous GTFS-RT bundles with added country-wide discovery for Tokyo and Seoul
-  - Taipei TDX bus vehicle feed + web-scrape JSON fallback + Mobility Database + Transitous GTFS-RT (Taipei)
+  - Seoul Subway web-scrape JSON source + Mobility Database + Transitous GTFS-RT (Seoul)
+  - Taipei TDX bus vehicle feed + Mobility Database + Transitous GTFS-RT (Taipei)
   - Mobility Database + Transitous GTFS-RT bundles (Osaka, Hong Kong, Singapore)
   - Amtraker US network
   - Transitous GTFS-RT fallback (rail + bus focused variants)

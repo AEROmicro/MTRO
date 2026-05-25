@@ -208,6 +208,11 @@ const TAIPEI_TDX_ENDPOINTS = [
   "https://tcgbusfs.blob.core.windows.net/blobbus/Vehicle/City/Taipei/Vehicle.json",
   "https://tcgbusfs.blob.core.windows.net/blobbus/Vehicle/City/NewTaipei/Vehicle.json"
 ];
+const SEOUL_SUBWAY_WEB_SCRAPE_ENDPOINTS = [
+  "https://seoul-subway.vercel.app/api/realtime/Gangnam",
+  "https://seoul-subway.vercel.app/api/realtime/SeoulStation",
+  "https://seoul-subway.vercel.app/api/realtime/HongikUniversity"
+];
 const MOBILITY_DATABASE_CITY_FILTERS = {
   "washington-dc": { country_code: "US", subdivision_name: "District of Columbia", municipality: "Washington" },
   "new-york-city": { country_code: "US", subdivision_name: "New York", municipality: "New York" },
@@ -275,7 +280,7 @@ function createMobilityDatabaseSourceBundle(cityId, fallbackLine, defaultType = 
   ].filter(Boolean);
 }
 
-function createCountryWideMobilityDatabaseSource(cityId, fallbackLine, countryCode, defaultType = "train") {
+function createCountrywideMobilityDatabaseSource(cityId, fallbackLine, countryCode, defaultType = "train") {
   return createMobilityDatabaseSource(cityId, fallbackLine, defaultType, {
     label: "Mobility Database GTFS-RT (country wide)",
     includeMunicipality: false,
@@ -361,7 +366,6 @@ const CITIES = [
     bbox: [42.58, -71.35, 42.17, -70.85],
     sources: [
       { provider: "mbta-json", endpoints: ["https://api-v3.mbta.com/vehicles"], label: "MBTA" },
-      { provider: "web-scrape-json", endpoints: ["https://api-v3.mbta.com/vehicles"], fallbackLine: "MBTA", label: "MBTA Web Scrape" },
       { provider: "gtfsrt-protobuf", endpoints: MBTA_GTFSRT_ENDPOINTS, fallbackLine: "MBTA", label: "MBTA GTFS-RT" },
       { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.mbta, fallbackLine: "MBTA", label: "NextBus MBTA", defaultType: "bus" },
       ...createMobilityDatabaseSourceBundle("boston", "Boston Transit"),
@@ -526,8 +530,8 @@ const CITIES = [
     sources: [
       ...createMobilityDatabaseSourceBundle("tokyo", "Tokyo Transit"),
       ...createMobilityDatabaseSourceBundle("tokyo", "Tokyo Transit", "bus"),
-      createCountryWideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP"),
-      createCountryWideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP", "bus"),
+      createCountrywideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP"),
+      createCountrywideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP", "bus"),
       createTransitousSource("Tokyo Transit"),
       createTransitousSource("Tokyo Transit", "bus")
     ]
@@ -537,10 +541,11 @@ const CITIES = [
     provider: "multi",
     bbox: [37.75, 127.25, 37.40, 126.75],
     sources: [
+      { provider: "web-scrape-json", endpoints: SEOUL_SUBWAY_WEB_SCRAPE_ENDPOINTS, fallbackLine: "Seoul Metro", label: "Seoul Subway Web Scrape", defaultType: "train" },
       ...createMobilityDatabaseSourceBundle("seoul", "Seoul Transit"),
       ...createMobilityDatabaseSourceBundle("seoul", "Seoul Transit", "bus"),
-      createCountryWideMobilityDatabaseSource("seoul", "Seoul Transit", "KR"),
-      createCountryWideMobilityDatabaseSource("seoul", "Seoul Transit", "KR", "bus"),
+      createCountrywideMobilityDatabaseSource("seoul", "Seoul Transit", "KR"),
+      createCountrywideMobilityDatabaseSource("seoul", "Seoul Transit", "KR", "bus"),
       createTransitousSource("Seoul Transit"),
       createTransitousSource("Seoul Transit", "bus")
     ]
@@ -551,11 +556,10 @@ const CITIES = [
     bbox: [25.30, 121.75, 24.95, 121.35],
     sources: [
       { provider: "gtfsrt-json", endpoints: TAIPEI_TDX_ENDPOINTS, fallbackLine: "Taipei Bus", label: "Taipei TDX Vehicle Feed", defaultType: "bus" },
-      { provider: "web-scrape-json", endpoints: TAIPEI_TDX_ENDPOINTS, fallbackLine: "Taipei Bus", label: "Taipei Bus Web Scrape", defaultType: "bus" },
       ...createMobilityDatabaseSourceBundle("taipei", "Taipei Transit"),
       ...createMobilityDatabaseSourceBundle("taipei", "Taipei Transit", "bus"),
-      createCountryWideMobilityDatabaseSource("taipei", "Taipei Transit", "TW"),
-      createCountryWideMobilityDatabaseSource("taipei", "Taipei Transit", "TW", "bus"),
+      createCountrywideMobilityDatabaseSource("taipei", "Taipei Transit", "TW"),
+      createCountrywideMobilityDatabaseSource("taipei", "Taipei Transit", "TW", "bus"),
       createTransitousSource("Taipei Transit"),
       createTransitousSource("Taipei Transit", "bus")
     ]
@@ -567,8 +571,8 @@ const CITIES = [
     sources: [
       ...createMobilityDatabaseSourceBundle("osaka", "Osaka Transit"),
       ...createMobilityDatabaseSourceBundle("osaka", "Osaka Transit", "bus"),
-      createCountryWideMobilityDatabaseSource("osaka", "Osaka Transit", "JP"),
-      createCountryWideMobilityDatabaseSource("osaka", "Osaka Transit", "JP", "bus"),
+      createCountrywideMobilityDatabaseSource("osaka", "Osaka Transit", "JP"),
+      createCountrywideMobilityDatabaseSource("osaka", "Osaka Transit", "JP", "bus"),
       createTransitousSource("Osaka Transit"),
       createTransitousSource("Osaka Transit", "bus")
     ]
@@ -580,8 +584,8 @@ const CITIES = [
     sources: [
       ...createMobilityDatabaseSourceBundle("hong-kong", "Hong Kong Transit"),
       ...createMobilityDatabaseSourceBundle("hong-kong", "Hong Kong Transit", "bus"),
-      createCountryWideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK"),
-      createCountryWideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK", "bus"),
+      createCountrywideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK"),
+      createCountrywideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK", "bus"),
       createTransitousSource("Hong Kong Transit"),
       createTransitousSource("Hong Kong Transit", "bus")
     ]
@@ -593,8 +597,8 @@ const CITIES = [
     sources: [
       ...createMobilityDatabaseSourceBundle("singapore", "Singapore Transit"),
       ...createMobilityDatabaseSourceBundle("singapore", "Singapore Transit", "bus"),
-      createCountryWideMobilityDatabaseSource("singapore", "Singapore Transit", "SG"),
-      createCountryWideMobilityDatabaseSource("singapore", "Singapore Transit", "SG", "bus"),
+      createCountrywideMobilityDatabaseSource("singapore", "Singapore Transit", "SG"),
+      createCountrywideMobilityDatabaseSource("singapore", "Singapore Transit", "SG", "bus"),
       createTransitousSource("Singapore Transit"),
       createTransitousSource("Singapore Transit", "bus")
     ]
@@ -967,6 +971,59 @@ function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
     return parseGenericGeoJson(data, city, fallbackLine, source);
   }
 
+  /**
+   * Extract balanced JSON snippets from arbitrary text by matching nested pairs.
+   * @param {string} text Input text that may contain JSON objects/arrays.
+   * @param {string} startChar Opening delimiter (`{` or `[`).
+   * @param {string} endChar Closing delimiter (`}` or `]`).
+   * @param {number} limit Maximum number of snippets to return (default 20 as a safety cap for large HTML pages).
+   * @returns {string[]} Candidate JSON snippets preserving nested structure.
+   */
+  function extractBalancedJsonSnippets(text, startChar, endChar, limit = 20) {
+    const snippets = [];
+    for (let i = 0; i < text.length && snippets.length < limit; i += 1) {
+      if (text[i] !== startChar) continue;
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+      for (let j = i; j < text.length; j += 1) {
+        const ch = text[j];
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (ch === "\\") {
+            escaped = true;
+            continue;
+          }
+          if (ch === "\"") inString = false;
+          continue;
+        }
+        if (ch === "\"") {
+          inString = true;
+          continue;
+        }
+        if (ch === startChar) depth += 1;
+        if (ch === endChar) {
+          depth -= 1;
+          if (depth === 0) {
+            snippets.push(text.slice(i, j + 1));
+            break;
+          }
+        }
+      }
+    }
+    return snippets;
+  }
+
+  /**
+   * Parse scraped text payloads into JSON.
+   * Attempts direct JSON parsing first, then falls back to balanced snippet
+   * extraction so HTML/script wrappers can still yield valid JSON payloads.
+   * @param {string} raw Raw response text from a scraped endpoint.
+   * @returns {any} Parsed JSON payload.
+   */
   function parseScrapedPayload(raw) {
     if (typeof raw !== "string") {
       throw new Error("Scraped payload is not text");
@@ -974,19 +1031,22 @@ function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
     const text = raw.trim();
     if (!text) throw new Error("Scraped payload is empty");
 
-    const candidates = [text];
-    const firstArray = text.indexOf("[");
-    const lastArray = text.lastIndexOf("]");
-    if (firstArray >= 0 && lastArray > firstArray) candidates.push(text.slice(firstArray, lastArray + 1));
-    const firstObject = text.indexOf("{");
-    const lastObject = text.lastIndexOf("}");
-    if (firstObject >= 0 && lastObject > firstObject) candidates.push(text.slice(firstObject, lastObject + 1));
+    try {
+      return JSON.parse(text);
+    } catch {
+      // Fall through to balanced JSON extraction attempts.
+    }
+
+    const candidates = [
+      ...extractBalancedJsonSnippets(text, "[", "]"),
+      ...extractBalancedJsonSnippets(text, "{", "}")
+    ];
 
     for (const candidate of candidates) {
       try {
         return JSON.parse(candidate);
       } catch {
-        // Keep trying alternative JSON candidates extracted from the payload.
+        // Try next balanced snippet candidate.
       }
     }
     throw new Error("Unable to parse scraped payload as JSON");
@@ -994,14 +1054,14 @@ function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
 
   function parseScrapedTransitRows(raw, city, source = {}) {
     const payload = parseScrapedPayload(raw);
+    const fallbackLine = source.fallbackLine || city.id;
     if (Array.isArray(payload?.vehicle)) {
-      return parseNextBus(payload, city, source.fallbackLine || city.id, source);
+      return parseNextBus(payload, city, fallbackLine, source);
     }
     if (Array.isArray(payload?.TrainPositions)) {
       return parseWmataJson(payload, city, source);
     }
 
-    const fallbackLine = source.fallbackLine || city.id;
     const amtrakRows = parseAmtraker(payload, city);
     if (amtrakRows.length) return amtrakRows;
 
