@@ -28,7 +28,7 @@ const CITIES = [
   { id: "milwaukee", name: "Milwaukee", center: [43.0389, -87.9065], zoom: 10, bbox: [43.25, -88.20, 42.85, -87.75], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
   { id: "los-angeles", name: "Los Angeles", center: [34.0522, -118.2437], zoom: 10, bbox: [34.45, -118.90, 33.65, -117.60], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Los_Angeles" },
   { id: "toronto", name: "Toronto", center: [43.6532, -79.3832], zoom: 10, bbox: [43.90, -79.70, 43.50, -79.05], provider: "multi", timezone: "America/Toronto" },
-  { id: "montreal", name: "Montreal", center: [45.5017, -73.5673], zoom: 10, bbox: [45.75, -74.30, 45.35, -73.40], provider: "multi", timezone: "America/Toronto" },
+  { id: "montreal", name: "Montreal", center: [45.5017, -73.5673], zoom: 10, bbox: [45.75, -74.30, 45.35, -73.40], provider: "multi", timezone: "America/Montreal" },
   { id: "vancouver", name: "Vancouver", center: [49.2827, -123.1207], zoom: 10, bbox: [49.45, -123.30, 49.00, -122.60], provider: "multi", timezone: "America/Vancouver" }
 ];
 
