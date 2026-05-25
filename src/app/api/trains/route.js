@@ -44,6 +44,10 @@ const METRA_API_KEYS = parseApiKeys(
   process.env.METRA_API_KEYS,
   process.env.METRA_API_KEY
 );
+const CTA_API_KEYS = parseApiKeys(
+  process.env.CTA_API_KEYS,
+  process.env.CTA_API_KEY
+);
 const BAY_AREA_511_API_KEYS = parseApiKeys(
   process.env.BAY_AREA_511_API_KEYS,
   process.env.BAY_AREA_511_API_KEY
@@ -131,6 +135,12 @@ const METRA_ENDPOINTS = [
   "https://gtfspublic.metrarail.com/gtfs/public/positions",
   ...METRA_API_KEYS.map((key) => `https://gtfspublic.metrarail.com/gtfs/public/positions?api_token=${encodeURIComponent(key)}`)
 ].filter(Boolean);
+const CTA_TRAIN_TRACKER_ENDPOINTS = CTA_API_KEYS.map(
+  (key) => `https://lapi.transitchicago.com/api/1.0/ttpositions.aspx?key=${encodeURIComponent(key)}&outputType=JSON`
+);
+const CTA_BUS_TRACKER_ENDPOINTS = CTA_API_KEYS.map(
+  (key) => `https://www.ctabustracker.com/bustime/api/v2/getvehicles?key=${encodeURIComponent(key)}&format=json&tmres=s`
+);
 const MCTS_ENDPOINTS = [
   "https://realtime.ridemcts.com/gtfsrt/vehicles"
 ];
@@ -481,6 +491,8 @@ const CITIES = [
     bbox: [42.15, -88.10, 41.60, -87.45],
     sources: [
       { provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" },
+      { provider: "web-scrape-json", endpoints: CTA_TRAIN_TRACKER_ENDPOINTS, fallbackLine: "CTA", label: "CTA Train Tracker", defaultType: "train" },
+      { provider: "web-scrape-json", endpoints: CTA_BUS_TRACKER_ENDPOINTS, fallbackLine: "CTA", label: "CTA Bus Tracker", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.cta, fallbackLine: "CTA", label: "NextBus CTA", defaultType: "bus" },
       { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.pace, fallbackLine: "Pace", label: "NextBus Pace", defaultType: "bus" },
       ...createMobilityDatabaseSourceBundle("chicago", "Chicago Transit"),
@@ -527,6 +539,14 @@ const CITIES = [
     bbox: [51.70, -0.55, 51.28, 0.30],
     sources: [
       { provider: "gtfsrt-json", endpoints: LONDON_TFL_STOPPOINT_ENDPOINTS, fallbackLine: "TfL", label: "TfL StopPoint", defaultType: "station" },
+      ...createMobilityDatabaseSourceBundle("london", "London Transit"),
+      ...createMobilityDatabaseSourceBundle("london", "London Transit", "bus"),
+      createMobilityDatabaseSource("london", "London Transit", "bus", {
+        label: "Mobility Database GTFS-RT (London wide)",
+        includeMunicipality: false,
+        officialFilter: "official-and-community",
+        mobilityDatabase: { subdivision_name: "England", country_code: "GB", entity_types: "vp" }
+      }),
       createTransitousSource("London Transit"),
       createTransitousSource("London Transit", "bus")
     ]
@@ -538,6 +558,14 @@ const CITIES = [
     sources: [
       { provider: "gtfsrt-json", endpoints: AMSTERDAM_OVAPI_ENDPOINTS, fallbackLine: "GVB", label: "OVapi Vehicle Positions", defaultType: "bus" },
       { provider: "gtfsrt-json", endpoints: AMSTERDAM_STOPS_ENDPOINTS, fallbackLine: "GVB", label: "Amsterdam Stops Dataset", defaultType: "station" },
+      ...createMobilityDatabaseSourceBundle("amsterdam", "Amsterdam Transit"),
+      ...createMobilityDatabaseSourceBundle("amsterdam", "Amsterdam Transit", "bus"),
+      createMobilityDatabaseSource("amsterdam", "Amsterdam Transit", "bus", {
+        label: "Mobility Database GTFS-RT (Amsterdam wide)",
+        includeMunicipality: false,
+        officialFilter: "official-and-community",
+        mobilityDatabase: { subdivision_name: "Noord-Holland", country_code: "NL", entity_types: "vp" }
+      }),
       createTransitousSource("Amsterdam Transit"),
       createTransitousSource("Amsterdam Transit", "bus")
     ]
@@ -548,6 +576,14 @@ const CITIES = [
     bbox: [49.10, 2.15, 48.70, 2.55],
     sources: [
       { provider: "gtfsrt-json", endpoints: PARIS_IDFM_STOPS_ENDPOINTS, fallbackLine: "IDFM", label: "IDFM Stops", defaultType: "station" },
+      ...createMobilityDatabaseSourceBundle("paris", "Paris Transit"),
+      ...createMobilityDatabaseSourceBundle("paris", "Paris Transit", "bus"),
+      createMobilityDatabaseSource("paris", "Paris Transit", "bus", {
+        label: "Mobility Database GTFS-RT (Paris wide)",
+        includeMunicipality: false,
+        officialFilter: "official-and-community",
+        mobilityDatabase: { subdivision_name: "Île-de-France", country_code: "FR", entity_types: "vp" }
+      }),
       createTransitousSource("Paris Transit"),
       createTransitousSource("Paris Transit", "bus")
     ]
@@ -756,6 +792,10 @@ function extractRouteId(row, defaultLine) {
   return row.routeTag
     || row.route
     || row.Route
+    || row.rt
+    || row.route_name
+    || row.RouteName
+    || row.name
     || row.route_id
     || row.routeId
     || row.line
@@ -821,7 +861,16 @@ function parseGenericGeoJson(data, city, defaultLine, source = {}) {
       const speedMs = Number(row.speed ?? row.Speed ?? row.Velocity ?? row.position?.speed);
       const mph = Number.isFinite(speedMs) ? Math.round(speedMs * MS_TO_MPH_FACTOR) : null;
       const line = extractRouteId(row, defaultLine);
-      const label = row.id || row.vehicle?.id || row.vehicle?.label || row.VehicleID || row.vehicleNo || row.TrainNo || row.trainNumber || `${index + 1}`;
+      const label = row.id
+        || row.vid
+        || row.rn
+        || row.vehicle?.id
+        || row.vehicle?.label
+        || row.VehicleID
+        || row.vehicleNo
+        || row.TrainNo
+        || row.trainNumber
+        || `${index + 1}`;
       const state = String(row.current_status || row.VehicleStatus || row.state || row.State || "In service");
       const type = inferVehicleType(
         source.defaultType,
@@ -832,7 +881,7 @@ function parseGenericGeoJson(data, city, defaultLine, source = {}) {
         state
       );
       return {
-        id: String(row.id || row.VehicleID || row.vehicleNo || row.trainNo || `${lat},${lon},${index}`),
+        id: String(row.id || row.vid || row.rn || row.VehicleID || row.vehicleNo || row.trainNo || `${lat},${lon},${index}`),
         line: String(line || defaultLine),
         label: String(label),
         status: mph != null ? `${mph} mph` : String(row.status || row.Status || "Active"),
