@@ -55,22 +55,22 @@ const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
   "https://api-v3.amtraker.com/v1/trains"
 ];
-const BART_ENDPOINTS = [
-  "http://api.bart.gov/gtfsrt/vehiclepositions.aspx",
-  "http://api.bart.gov/gtfsrt/vehicleposition.aspx",
-  "https://api.bart.gov/gtfsrt/vehiclepositions.aspx",
-  "https://api.bart.gov/gtfsrt/vehicleposition.aspx",
-  `http://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  `http://api.bart.gov/gtfsrt/vehicleposition.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+const BART_ENDPOINTS = [...new Set([
   `https://api.bart.gov/gtfsrt/vehicleposition.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
+  `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
   `https://api.bart.gov/gtfsrt/vehicleposition.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
   `https://api.bart.gov/gtfsrt/vehiclepositions.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  "http://api.bart.gov/gtfsrt/vehicleposition.pb",
-  "http://api.bart.gov/gtfsrt/vehiclepositions.pb",
+  "https://api.bart.gov/gtfsrt/vehiclepositions.aspx",
+  "https://api.bart.gov/gtfsrt/vehicleposition.aspx",
   "https://api.bart.gov/gtfsrt/vehicleposition.pb",
-  "https://api.bart.gov/gtfsrt/vehiclepositions.pb"
-];
+  "https://api.bart.gov/gtfsrt/vehiclepositions.pb",
+  // BART has historically served anonymous GTFS-RT over plain HTTP; keep unauthenticated
+  // HTTP fallbacks only after all HTTPS options so legacy-only upstream paths still work.
+  "http://api.bart.gov/gtfsrt/vehiclepositions.aspx",
+  "http://api.bart.gov/gtfsrt/vehicleposition.aspx",
+  "http://api.bart.gov/gtfsrt/vehicleposition.pb",
+  "http://api.bart.gov/gtfsrt/vehiclepositions.pb"
+])];
 const MBTA_GTFSRT_ENDPOINTS = [
   "https://cdn.mbta.com/realtime/VehiclePositions.pb"
 ];
@@ -224,19 +224,23 @@ const MOBILITY_DATABASE_CITY_FILTERS = {
 function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train", options = {}) {
   const locationFilter = MOBILITY_DATABASE_CITY_FILTERS[cityId];
   if (!locationFilter) return null; // Intentionally optional so unsupported cities can skip discovery.
+  const filterMode = options.officialFilter || "official-only";
   const mobilityDatabase = {
     ...locationFilter,
     entity_types: "vp",
-    is_official: true,
     ...(options.mobilityDatabase || {})
   };
   if (options.includeMunicipality === false) {
     delete mobilityDatabase.municipality;
   }
-  if (typeof options.isOfficial === "boolean") {
-    mobilityDatabase.is_official = options.isOfficial;
-  } else if (options.isOfficial === null) {
+  if (filterMode === "official-only") {
+    mobilityDatabase.is_official = true;
+  } else if (filterMode === "community-only") {
+    mobilityDatabase.is_official = false;
+  } else if (filterMode === "official-and-community") {
     delete mobilityDatabase.is_official;
+  } else {
+    mobilityDatabase.is_official = true;
   }
   return {
     provider: "mobilitydb-gtfsrt-discovery",
@@ -259,7 +263,7 @@ function createMobilityDatabaseSourceBundle(cityId, fallbackLine, defaultType = 
     createMobilityDatabaseSource(cityId, fallbackLine, defaultType, {
       label: "Mobility Database GTFS-RT (regional community)",
       includeMunicipality: false,
-      isOfficial: null
+      officialFilter: "official-and-community"
     })
   ].filter(Boolean);
 }
