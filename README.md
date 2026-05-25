@@ -26,6 +26,7 @@ Requires Node.js 22+ (for `gtfs-realtime-bindings`).
 Store keys in environment variables instead of committing them:
 
 - `WMATA_API_KEYS` (comma-separated) or `WMATA_API_KEY`
+- `WMATA_DEMO_API_KEY` (optional override for the built-in WMATA demo-key fallback used when no WMATA key is provided)
 - `METRA_API_KEYS` (comma-separated) or `METRA_API_KEY`
 - `HOUSTON_METRO_API_KEYS` (comma-separated) or `HOUSTON_METRO_API_KEY`
 - `MOBILITY_DATABASE_ACCESS_TOKEN` (preferred) or `MOBILITY_DATABASE_REFRESH_TOKEN`
@@ -55,9 +56,10 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - Multi-source API coverage for these cities including:
   - Mobility Database GTFS-RT feed discovery bundles per city (city official + regional official + regional community sources)
   - VRE GTFS-RT (Washington, DC area commuter rail)
-  - WMATA TrainPositions + WMATA Rail GTFS-RT + WMATA Bus GTFS-RT (Washington, DC)
+  - WMATA TrainPositions + WMATA Rail GTFS-RT + WMATA Bus GTFS-RT (Washington, DC, with automatic demo-key fallback when no WMATA key is set)
   - MTA NYCT + MTA Bus + LIRR + Metro-North GTFS-RT (New York City)
   - NextBus DC Circulator + Fairfax Connector (Washington, DC)
+  - Keyless D.C. regional alternatives via Mobility Database discovery + NextBus feeds
   - MBTA vehicles API (Boston)
   - MBTA GTFS-RT + NextBus MBTA (Boston)
   - BART GTFS-RT (Bay Area)

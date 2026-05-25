@@ -27,12 +27,16 @@ function trimTrailingSlashes(value) {
 }
 
 const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
+const WMATA_DEMO_API_KEY = String(process.env.WMATA_DEMO_API_KEY || "e13626d03d8e4c03ac07f95541b3091b").trim();
 const WMATA_API_KEYS = parseApiKeys(
   process.env.WMATA_API_KEYS,
   process.env.WMATA_API_KEY,
   process.env.WMATA_PRIMARY_KEY,
   process.env.WMATA_SECONDARY_KEY
 );
+const WMATA_EFFECTIVE_API_KEYS = WMATA_API_KEYS.length
+  ? WMATA_API_KEYS
+  : parseApiKeys(WMATA_DEMO_API_KEY);
 const MTA_API_KEY = process.env.MTA_API_KEY;
 const METRA_API_KEYS = parseApiKeys(
   process.env.METRA_API_KEYS,
@@ -101,27 +105,27 @@ const WMATA_TRAIN_POSITIONS_ENDPOINTS = [
   "https://api.wmata.com/TrainPositions/TrainPositions?contentType=json",
   "https://api.wmata.com/TrainPositions/TrainPositions"
 ];
-const WMATA_TRAIN_POSITION_SOURCES = keysOrNull(WMATA_API_KEYS).map((key) => ({
+const WMATA_TRAIN_POSITION_SOURCES = WMATA_EFFECTIVE_API_KEYS.map((key) => ({
   provider: "wmata-json",
   endpoints: WMATA_TRAIN_POSITIONS_ENDPOINTS,
   label: "WMATA TrainPositions",
-  headers: key ? { api_key: key } : undefined
+  headers: { api_key: key }
 }));
-const WMATA_RAIL_SOURCES = keysOrNull(WMATA_API_KEYS).map((key) => ({
+const WMATA_RAIL_SOURCES = WMATA_EFFECTIVE_API_KEYS.map((key) => ({
   provider: "gtfsrt-protobuf",
   endpoints: WMATA_RAIL_ENDPOINTS,
   fallbackLine: "WMATA",
   label: "WMATA Rail GTFS-RT",
   defaultType: "train",
-  headers: key ? { api_key: key } : undefined
+  headers: { api_key: key }
 }));
-const WMATA_BUS_SOURCES = keysOrNull(WMATA_API_KEYS).map((key) => ({
+const WMATA_BUS_SOURCES = WMATA_EFFECTIVE_API_KEYS.map((key) => ({
   provider: "gtfsrt-protobuf",
   endpoints: WMATA_BUS_ENDPOINTS,
   fallbackLine: "WMATA Bus",
   label: "WMATA Bus GTFS-RT",
   defaultType: "bus",
-  headers: key ? { api_key: key } : undefined
+  headers: { api_key: key }
 }));
 const METRA_ENDPOINTS = [
   "https://gtfspublic.metrarail.com/gtfs/public/positions",
