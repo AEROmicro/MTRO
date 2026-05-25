@@ -205,6 +205,8 @@ const TTC_ENDPOINTS = [
   "https://bustime.ttc.ca/gtfsrt/vehicles"
 ];
 const BAY_AREA_BART_STATION_ENDPOINTS = [
+  // Keep both forms: keyed URL first for compatibility with stricter upstream behavior,
+  // then anonymous fallback for deployments that intentionally run fully keyless.
   `https://api.bart.gov/api/stn.aspx?cmd=stns&json=y&key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
   "https://api.bart.gov/api/stn.aspx?cmd=stns&json=y"
 ];
