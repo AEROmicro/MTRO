@@ -22,29 +22,48 @@ const CITIES = [
   { id: "atlanta", name: "Atlanta", center: [33.7490, -84.3880], zoom: 10, bbox: [34.15, -84.70, 33.40, -83.95], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/New_York" },
   { id: "denver", name: "Denver", center: [39.7392, -104.9903], zoom: 10, bbox: [40.10, -105.30, 39.55, -104.70], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Denver" },
   { id: "chicago", name: "Chicago", center: [41.8781, -87.6298], zoom: 10, bbox: [42.15, -88.10, 41.60, -87.45], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
-  { id: "houston", name: "Houston", center: [29.7604, -95.3698], zoom: 10, bbox: [30.20, -95.80, 29.40, -95.00], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
-  { id: "detroit", name: "Detroit", center: [42.3314, -83.0458], zoom: 10, bbox: [42.55, -83.40, 42.20, -82.90], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Detroit" },
-  { id: "salt-lake-city", name: "Salt Lake City", center: [40.7608, -111.8910], zoom: 10, bbox: [40.92, -112.20, 40.45, -111.70], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Denver" },
   { id: "milwaukee", name: "Milwaukee", center: [43.0389, -87.9065], zoom: 10, bbox: [43.25, -88.20, 42.85, -87.75], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
-  { id: "los-angeles", name: "Los Angeles", center: [34.0522, -118.2437], zoom: 10, bbox: [34.45, -118.90, 33.65, -117.60], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Los_Angeles" },
   { id: "toronto", name: "Toronto", center: [43.6532, -79.3832], zoom: 10, bbox: [43.90, -79.70, 43.50, -79.05], provider: "multi", timezone: "America/Toronto" },
-  { id: "montreal", name: "Montreal", center: [45.5017, -73.5673], zoom: 10, bbox: [45.75, -74.30, 45.35, -73.40], provider: "multi", timezone: "America/Montreal" },
-  { id: "vancouver", name: "Vancouver", center: [49.2827, -123.1207], zoom: 10, bbox: [49.45, -123.30, 49.00, -122.60], provider: "multi", timezone: "America/Vancouver" }
+  { id: "tokyo", name: "Tokyo", center: [35.6762, 139.6503], zoom: 10, bbox: [35.90, 140.10, 35.45, 139.45], provider: "multi", timezone: "Asia/Tokyo" },
+  { id: "seoul", name: "Seoul", center: [37.5665, 126.9780], zoom: 10, bbox: [37.75, 127.25, 37.40, 126.75], provider: "multi", timezone: "Asia/Seoul" },
+  { id: "taipei", name: "Taipei", center: [25.0330, 121.5654], zoom: 11, bbox: [25.30, 121.75, 24.95, 121.35], provider: "multi", timezone: "Asia/Taipei" }
 ];
+
+const FARES = [
+  { id: "new-york-city", cityName: "New York City", fare: "$2.90 base fare" },
+  { id: "toronto", cityName: "Toronto", fare: "CA$3.35 adult PRESTO" },
+  { id: "washington-dc", cityName: "Washington, DC", fare: "$2.25 bus base fare" },
+  { id: "boston", cityName: "Boston", fare: "$2.40 subway base fare" }
+];
+
+const TRANSLATIONS = {
+  en: { language: "Language", search: "Search", searchCity: "Search city", city: "City", time: "Time", live: "Live", refresh: "Refresh", fares: "Fares", faresTitle: "Fares", fareUnknown: "Fare info unavailable", loading: "Loading…", loadingData: "Loading data…", transitTypes: "Transit types", noData: "No data available for this view.", viewingSnapshot: "Viewing saved snapshot from {time}.", lastUpdate: "{message} Last update: {time}.", unableToLoad: "Unable to load train data: {error}" },
+  es: { language: "Idioma", search: "Buscar", searchCity: "Buscar ciudad", city: "Ciudad", time: "Hora", live: "En vivo", refresh: "Actualizar", fares: "Tarifas", faresTitle: "Tarifas", fareUnknown: "Tarifa no disponible", loading: "Cargando…", loadingData: "Cargando datos…", transitTypes: "Tipos de transporte", noData: "No hay datos disponibles para esta vista.", viewingSnapshot: "Viendo instantánea guardada de {time}.", lastUpdate: "{message} Última actualización: {time}.", unableToLoad: "No se pudieron cargar los datos: {error}" },
+  fr: { language: "Langue", search: "Rechercher", searchCity: "Rechercher une ville", city: "Ville", time: "Heure", live: "Direct", refresh: "Actualiser", fares: "Tarifs", faresTitle: "Tarifs", fareUnknown: "Tarif indisponible", loading: "Chargement…", loadingData: "Chargement des données…", transitTypes: "Types de transport", noData: "Aucune donnée disponible pour cette vue.", viewingSnapshot: "Affichage de l’instantané enregistré de {time}.", lastUpdate: "{message} Dernière mise à jour: {time}.", unableToLoad: "Impossible de charger les données: {error}" },
+  de: { language: "Sprache", search: "Suche", searchCity: "Stadt suchen", city: "Stadt", time: "Zeit", live: "Live", refresh: "Aktualisieren", fares: "Preise", faresTitle: "Preise", fareUnknown: "Keine Preisdaten verfügbar", loading: "Laden…", loadingData: "Daten werden geladen…", transitTypes: "Verkehrsarten", noData: "Keine Daten für diese Ansicht verfügbar.", viewingSnapshot: "Gespeicherte Momentaufnahme von {time} wird angezeigt.", lastUpdate: "{message} Letzte Aktualisierung: {time}.", unableToLoad: "Livedaten konnten nicht geladen werden: {error}" },
+  zh: { language: "语言", search: "搜索", searchCity: "搜索城市", city: "城市", time: "时间", live: "实时", refresh: "刷新", fares: "票价", faresTitle: "票价", fareUnknown: "暂无票价信息", loading: "加载中…", loadingData: "正在加载数据…", transitTypes: "交通类型", noData: "当前视图暂无数据。", viewingSnapshot: "正在查看保存于 {time} 的快照。", lastUpdate: "{message} 最后更新：{time}。", unableToLoad: "无法加载实时数据：{error}" }
+};
 
 const citySearch = document.getElementById("citySearch");
 const cityOptions = document.getElementById("cityOptions");
 const citySelect = document.getElementById("citySelect");
 const snapshotSelect = document.getElementById("snapshotSelect");
 const refreshBtn = document.getElementById("refreshBtn");
+const languageSelect = document.getElementById("languageSelect");
 const statusEl = document.getElementById("status");
 const trainList = document.getElementById("trainList");
 const panelTitle = document.getElementById("panelTitle");
 const modeLegend = document.getElementById("modeLegend");
 const utcTimeEl = document.getElementById("utcTime");
 const localTimeEl = document.getElementById("localTime");
+const faresToggle = document.getElementById("faresToggle");
+const faresDrawer = document.getElementById("faresDrawer");
+const faresTitle = document.getElementById("faresTitle");
+const faresList = document.getElementById("faresList");
+const languageLabel = document.getElementById("languageLabel");
 const DEFAULT_CITY_ID = "new-york-city";
 const defaultCity = CITIES.find((city) => city.id === DEFAULT_CITY_ID) || CITIES[0];
+let currentLanguage = "en";
 
 const map = L.map("map", { zoomControl: true }).setView(defaultCity.center, defaultCity.zoom);
 
@@ -78,6 +97,50 @@ for (const city of CITIES) {
 }
 citySelect.value = defaultCity.id;
 citySearch.value = CITIES.find((city) => city.id === citySelect.value)?.name || "";
+languageSelect.value = currentLanguage;
+
+function t(key) {
+  return TRANSLATIONS[currentLanguage]?.[key] || TRANSLATIONS.en[key] || key;
+}
+
+function formatT(key, values = {}) {
+  let template = t(key);
+  for (const [valueKey, value] of Object.entries(values)) {
+    template = template.replaceAll(`{${valueKey}}`, String(value));
+  }
+  return template;
+}
+
+function applyTranslations() {
+  languageLabel.textContent = t("language");
+  document.querySelector('label[for="citySearch"]').textContent = t("search");
+  citySearch.placeholder = t("searchCity");
+  document.querySelector('label[for="citySelect"]').textContent = t("city");
+  document.querySelector('label[for="snapshotSelect"]').textContent = t("time");
+  const liveOption = snapshotSelect.querySelector('option[value="live"]');
+  if (liveOption) liveOption.textContent = t("live");
+  refreshBtn.textContent = t("refresh");
+  faresToggle.textContent = t("fares");
+  faresTitle.textContent = t("faresTitle");
+  const legendTitle = document.querySelector(".legend strong");
+  if (legendTitle) legendTitle.textContent = t("transitTypes");
+  renderModeLegend();
+}
+
+function renderFares() {
+  faresList.textContent = "";
+  for (const fareItem of FARES) {
+    const item = document.createElement("li");
+    const cityLine = document.createElement("div");
+    cityLine.className = "fare-city";
+    cityLine.textContent = fareItem.cityName;
+    const priceLine = document.createElement("div");
+    priceLine.className = "fare-price";
+    priceLine.textContent = fareItem.fare || t("fareUnknown");
+    item.append(cityLine, priceLine);
+    faresList.append(item);
+  }
+}
 
 function escapeHtml(text) {
   return String(text)
@@ -108,11 +171,19 @@ function getVehicleColor(type) {
 
 function getVehicleLabel(type) {
   const normalized = normalizeVehicleType(type);
-  if (normalized === "bus") return "Bus";
-  if (normalized === "tram") return "Tram";
-  if (normalized === "station") return "Station";
-  if (normalized === "other") return "Vehicle";
-  return "Train";
+  const labelsByLanguage = {
+    en: { bus: "Bus", tram: "Tram", station: "Station", other: "Vehicle", train: "Train" },
+    es: { bus: "Autobús", tram: "Tranvía", station: "Estación", other: "Vehículo", train: "Tren" },
+    fr: { bus: "Bus", tram: "Tram", station: "Station", other: "Véhicule", train: "Train" },
+    de: { bus: "Bus", tram: "Straßenbahn", station: "Station", other: "Fahrzeug", train: "Zug" },
+    zh: { bus: "公交", tram: "有轨电车", station: "车站", other: "车辆", train: "列车" }
+  };
+  const labels = labelsByLanguage[currentLanguage] || labelsByLanguage.en;
+  if (normalized === "bus") return labels.bus;
+  if (normalized === "tram") return labels.tram;
+  if (normalized === "station") return labels.station;
+  if (normalized === "other") return labels.other;
+  return labels.train;
 }
 
 function renderModeLegend() {
@@ -304,7 +375,10 @@ function normalizeTrains(trains) {
 }
 
 function renderStatus(message, payloadTimestamp) {
-  statusEl.textContent = `${message} Last update: ${new Date(payloadTimestamp).toLocaleTimeString()}.`;
+  statusEl.textContent = formatT("lastUpdate", {
+    message,
+    time: new Date(payloadTimestamp).toLocaleTimeString()
+  });
 }
 
 function getTimeZoneLabel(timezone, date) {
@@ -348,7 +422,7 @@ async function loadCity(cityId) {
   citySearch.value = city.name;
   map.setView(city.center, city.zoom);
   panelTitle.textContent = `${city.name} Transit`;
-  statusEl.textContent = "Loading…";
+  statusEl.textContent = t("loading");
   updateTimeBar();
 
   try {
@@ -360,7 +434,7 @@ async function loadCity(cityId) {
     renderStatus(result.message || "Data loaded.", payload.timestamp);
   } catch (error) {
     renderTrains([]);
-    statusEl.textContent = `Unable to load train data: ${error.message}`;
+    statusEl.textContent = formatT("unableToLoad", { error: error.message });
     refreshSnapshotSelector();
   }
 }
@@ -391,12 +465,27 @@ snapshotSelect.addEventListener("change", () => {
   );
   if (selected) {
     renderTrains(selected.trains, selected.timestamp);
-    statusEl.textContent = `Viewing saved snapshot from ${new Date(selected.timestamp).toLocaleString()}.`;
+    statusEl.textContent = formatT("viewingSnapshot", { time: new Date(selected.timestamp).toLocaleString() });
   }
 });
 
 refreshBtn.addEventListener("click", () => {
   loadCity(currentCity.id);
+});
+
+languageSelect.addEventListener("change", () => {
+  const selectedLanguage = languageSelect.value;
+  if (!TRANSLATIONS[selectedLanguage]) return;
+  currentLanguage = selectedLanguage;
+  applyTranslations();
+  renderFares();
+  refreshSnapshotSelector();
+});
+
+faresToggle.addEventListener("click", () => {
+  const isOpen = faresDrawer.classList.toggle("is-open");
+  faresToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  faresDrawer.setAttribute("aria-hidden", isOpen ? "false" : "true");
 });
 
 setInterval(() => {
@@ -409,6 +498,8 @@ setInterval(updateTimeBar, 1000);
 
 loadCity(defaultCity.id);
 renderModeLegend();
+applyTranslations();
+renderFares();
 updateTimeBar();
 
 function renderTrains(trains, timestamp = null) {
@@ -428,7 +519,7 @@ function renderTrainList(trains, timestamp = null) {
   if (!trains.length) {
     const empty = document.createElement("li");
     empty.className = "train-item train-item--empty";
-    empty.textContent = "No data available for this view.";
+    empty.textContent = t("noData");
     trainList.append(empty);
     return;
   }
@@ -624,11 +715,12 @@ function pushHistory(cityId, payload) {
 
 function refreshSnapshotSelector() {
   const history = historyByCity.get(currentCity.id) || [];
+  const previousValue = snapshotSelect.value || "live";
   snapshotSelect.textContent = "";
 
   const live = document.createElement("option");
   live.value = "live";
-  live.textContent = "Live";
+  live.textContent = t("live");
   snapshotSelect.append(live);
 
   for (const entry of history) {
@@ -638,5 +730,5 @@ function refreshSnapshotSelector() {
     snapshotSelect.append(opt);
   }
 
-  snapshotSelect.value = "live";
+  snapshotSelect.value = history.some((entry) => entry.timestamp === previousValue) ? previousValue : "live";
 }

@@ -19,6 +19,14 @@
           </div>
         </div>
         <nav class="controls" aria-label="Transit filter controls">
+          <label for="languageSelect" id="languageLabel">Language</label>
+          <select id="languageSelect" aria-label="Language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="zh">中文</option>
+          </select>
           <label for="citySearch">Search</label>
           <input id="citySearch" list="cityOptions" type="search" placeholder="Search city" autocomplete="off" />
           <datalist id="cityOptions"></datalist>
@@ -45,6 +53,11 @@
         <ul id="trainList" class="train-list"></ul>
       </aside>
     </main>
+    <button id="faresToggle" class="fares-toggle" type="button" aria-controls="faresDrawer" aria-expanded="false">Fares</button>
+    <aside id="faresDrawer" class="fares-drawer" aria-label="Fare prices" aria-hidden="true">
+      <h2 id="faresTitle">Fares</h2>
+      <ul id="faresList" class="fares-list"></ul>
+    </aside>
 
     <script src="/vendor/leaflet/leaflet.js"></script>
     <script src="/app.js"></script>
