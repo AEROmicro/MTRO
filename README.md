@@ -28,6 +28,7 @@ Store keys in environment variables instead of committing them:
 - `WMATA_API_KEYS` (comma-separated) or `WMATA_API_KEY`
 - `WMATA_DEMO_API_KEY` (optional override for the built-in WMATA demo-key fallback used when no WMATA key is provided)
 - `METRA_API_KEYS` (comma-separated) or `METRA_API_KEY`
+- `CTA_API_KEYS` (comma-separated) or `CTA_API_KEY` (for CTA Train Tracker + Bus Tracker feeds)
 - `BAY_AREA_511_API_KEYS` (comma-separated) or `BAY_AREA_511_API_KEY`
 - `MOBILITY_DATABASE_ACCESS_TOKEN` (preferred) or `MOBILITY_DATABASE_REFRESH_TOKEN`
 - `MOBILITY_DATABASE_API_BASE` (optional override, defaults to `https://api.mobilitydatabase.org`)
@@ -69,11 +70,11 @@ For deployed environments, set these as platform secrets (for example, in Vercel
   - MARTA GTFS-RT + fallbacks (Atlanta)
   - RTD GTFS-RT + alternate endpoint (Denver)
   - SEPTA TrainView + SEPTA GTFS-RT + NextBus SEPTA + bus-focused discovery (Philadelphia)
-  - Metra GTFS-RT + NextBus CTA + NextBus Pace + Chicago-wide Mobility Database discovery (Chicago)
+  - Metra GTFS-RT + CTA Train Tracker + CTA Bus Tracker + NextBus CTA + NextBus Pace + Chicago-wide Mobility Database discovery (Chicago)
   - MCTS GTFS-RT (Milwaukee)
   - TTC GTFS-RT + Mobility Database bundles + Amtraker + Transitous GTFS-RT (Toronto)
-  - TfL StopPoint + Transitous GTFS-RT bundles (London)
-  - OVapi vehicle positions + Amsterdam stops dataset + Transitous GTFS-RT bundles (Amsterdam)
-  - Île-de-France Mobilités stops + Transitous GTFS-RT bundles (Paris)
+  - TfL StopPoint + Mobility Database bundles + Transitous GTFS-RT bundles (London)
+  - OVapi vehicle positions + Amsterdam stops dataset + Mobility Database bundles + Transitous GTFS-RT bundles (Amsterdam)
+  - Île-de-France Mobilités stops + Mobility Database bundles + Transitous GTFS-RT bundles (Paris)
   - Amtraker US network
   - Transitous GTFS-RT fallback (rail + bus focused variants)
