@@ -804,6 +804,13 @@ function extractRouteId(row, defaultLine) {
     || defaultLine;
 }
 
+/**
+ * Return the first array found on a known list of property keys, or the value
+ * itself when the root payload is already an array.
+ * @param {any} value Response payload to inspect.
+ * @param {string[]} keys Candidate property names that may contain entity arrays.
+ * @returns {any[]} The first matching array, or an empty array when none exist.
+ */
 function extractArrayByKeys(value, keys = []) {
   for (const key of keys) {
     const candidate = value?.[key];
@@ -833,9 +840,7 @@ function extractGeoRows(value, maxRows = 400) {
       rows.push({
         ...current,
         lat,
-        lon,
-        heading: current.heading ?? current.bearing ?? current.position?.bearing,
-        speed: current.speed ?? current.position?.speed
+        lon
       });
     }
 
