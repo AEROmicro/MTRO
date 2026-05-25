@@ -222,7 +222,10 @@ const MOBILITY_DATABASE_CITY_FILTERS = {
   toronto: { country_code: "CA", subdivision_name: "Ontario", municipality: "Toronto" },
   tokyo: { country_code: "JP", subdivision_name: "Tokyo", municipality: "Tokyo" },
   seoul: { country_code: "KR", subdivision_name: "Seoul", municipality: "Seoul" },
-  taipei: { country_code: "TW", subdivision_name: "Taipei", municipality: "Taipei" }
+  taipei: { country_code: "TW", subdivision_name: "Taipei", municipality: "Taipei" },
+  osaka: { country_code: "JP", subdivision_name: "Osaka", municipality: "Osaka" },
+  "hong-kong": { country_code: "HK", subdivision_name: "Hong Kong", municipality: "Hong Kong" },
+  singapore: { country_code: "SG", subdivision_name: "Singapore", municipality: "Singapore" }
 };
 
 function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train", options = {}) {
@@ -270,6 +273,15 @@ function createMobilityDatabaseSourceBundle(cityId, fallbackLine, defaultType = 
       officialFilter: "official-and-community"
     })
   ].filter(Boolean);
+}
+
+function createCountryWideMobilityDatabaseSource(cityId, fallbackLine, countryCode, defaultType = "train") {
+  return createMobilityDatabaseSource(cityId, fallbackLine, defaultType, {
+    label: "Mobility Database GTFS-RT (country wide)",
+    includeMunicipality: false,
+    officialFilter: "official-and-community",
+    mobilityDatabase: { country_code: countryCode, entity_types: "vp" }
+  });
 }
 
 function createTransitousSource(fallbackLine, defaultType = "train") {
@@ -349,6 +361,7 @@ const CITIES = [
     bbox: [42.58, -71.35, 42.17, -70.85],
     sources: [
       { provider: "mbta-json", endpoints: ["https://api-v3.mbta.com/vehicles"], label: "MBTA" },
+      { provider: "web-scrape-json", endpoints: ["https://api-v3.mbta.com/vehicles"], fallbackLine: "MBTA", label: "MBTA Web Scrape" },
       { provider: "gtfsrt-protobuf", endpoints: MBTA_GTFSRT_ENDPOINTS, fallbackLine: "MBTA", label: "MBTA GTFS-RT" },
       { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.mbta, fallbackLine: "MBTA", label: "NextBus MBTA", defaultType: "bus" },
       ...createMobilityDatabaseSourceBundle("boston", "Boston Transit"),
@@ -513,6 +526,8 @@ const CITIES = [
     sources: [
       ...createMobilityDatabaseSourceBundle("tokyo", "Tokyo Transit"),
       ...createMobilityDatabaseSourceBundle("tokyo", "Tokyo Transit", "bus"),
+      createCountryWideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP"),
+      createCountryWideMobilityDatabaseSource("tokyo", "Tokyo Transit", "JP", "bus"),
       createTransitousSource("Tokyo Transit"),
       createTransitousSource("Tokyo Transit", "bus")
     ]
@@ -524,6 +539,8 @@ const CITIES = [
     sources: [
       ...createMobilityDatabaseSourceBundle("seoul", "Seoul Transit"),
       ...createMobilityDatabaseSourceBundle("seoul", "Seoul Transit", "bus"),
+      createCountryWideMobilityDatabaseSource("seoul", "Seoul Transit", "KR"),
+      createCountryWideMobilityDatabaseSource("seoul", "Seoul Transit", "KR", "bus"),
       createTransitousSource("Seoul Transit"),
       createTransitousSource("Seoul Transit", "bus")
     ]
@@ -534,10 +551,52 @@ const CITIES = [
     bbox: [25.30, 121.75, 24.95, 121.35],
     sources: [
       { provider: "gtfsrt-json", endpoints: TAIPEI_TDX_ENDPOINTS, fallbackLine: "Taipei Bus", label: "Taipei TDX Vehicle Feed", defaultType: "bus" },
+      { provider: "web-scrape-json", endpoints: TAIPEI_TDX_ENDPOINTS, fallbackLine: "Taipei Bus", label: "Taipei Bus Web Scrape", defaultType: "bus" },
       ...createMobilityDatabaseSourceBundle("taipei", "Taipei Transit"),
       ...createMobilityDatabaseSourceBundle("taipei", "Taipei Transit", "bus"),
+      createCountryWideMobilityDatabaseSource("taipei", "Taipei Transit", "TW"),
+      createCountryWideMobilityDatabaseSource("taipei", "Taipei Transit", "TW", "bus"),
       createTransitousSource("Taipei Transit"),
       createTransitousSource("Taipei Transit", "bus")
+    ]
+  },
+  {
+    id: "osaka",
+    provider: "multi",
+    bbox: [34.85, 135.75, 34.52, 135.30],
+    sources: [
+      ...createMobilityDatabaseSourceBundle("osaka", "Osaka Transit"),
+      ...createMobilityDatabaseSourceBundle("osaka", "Osaka Transit", "bus"),
+      createCountryWideMobilityDatabaseSource("osaka", "Osaka Transit", "JP"),
+      createCountryWideMobilityDatabaseSource("osaka", "Osaka Transit", "JP", "bus"),
+      createTransitousSource("Osaka Transit"),
+      createTransitousSource("Osaka Transit", "bus")
+    ]
+  },
+  {
+    id: "hong-kong",
+    provider: "multi",
+    bbox: [22.56, 114.40, 22.15, 113.84],
+    sources: [
+      ...createMobilityDatabaseSourceBundle("hong-kong", "Hong Kong Transit"),
+      ...createMobilityDatabaseSourceBundle("hong-kong", "Hong Kong Transit", "bus"),
+      createCountryWideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK"),
+      createCountryWideMobilityDatabaseSource("hong-kong", "Hong Kong Transit", "HK", "bus"),
+      createTransitousSource("Hong Kong Transit"),
+      createTransitousSource("Hong Kong Transit", "bus")
+    ]
+  },
+  {
+    id: "singapore",
+    provider: "multi",
+    bbox: [1.48, 104.07, 1.21, 103.60],
+    sources: [
+      ...createMobilityDatabaseSourceBundle("singapore", "Singapore Transit"),
+      ...createMobilityDatabaseSourceBundle("singapore", "Singapore Transit", "bus"),
+      createCountryWideMobilityDatabaseSource("singapore", "Singapore Transit", "SG"),
+      createCountryWideMobilityDatabaseSource("singapore", "Singapore Transit", "SG", "bus"),
+      createTransitousSource("Singapore Transit"),
+      createTransitousSource("Singapore Transit", "bus")
     ]
   }
 ];
@@ -908,6 +967,50 @@ function parseGtfsRealtimeJson(data, city, fallbackLine, source = {}) {
     return parseGenericGeoJson(data, city, fallbackLine, source);
   }
 
+  function parseScrapedPayload(raw) {
+    if (typeof raw !== "string") {
+      throw new Error("Scraped payload is not text");
+    }
+    const text = raw.trim();
+    if (!text) throw new Error("Scraped payload is empty");
+
+    const candidates = [text];
+    const firstArray = text.indexOf("[");
+    const lastArray = text.lastIndexOf("]");
+    if (firstArray >= 0 && lastArray > firstArray) candidates.push(text.slice(firstArray, lastArray + 1));
+    const firstObject = text.indexOf("{");
+    const lastObject = text.lastIndexOf("}");
+    if (firstObject >= 0 && lastObject > firstObject) candidates.push(text.slice(firstObject, lastObject + 1));
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // Keep trying alternative JSON candidates extracted from the payload.
+      }
+    }
+    throw new Error("Unable to parse scraped payload as JSON");
+  }
+
+  function parseScrapedTransitRows(raw, city, source = {}) {
+    const payload = parseScrapedPayload(raw);
+    if (Array.isArray(payload?.vehicle)) {
+      return parseNextBus(payload, city, source.fallbackLine || city.id, source);
+    }
+    if (Array.isArray(payload?.TrainPositions)) {
+      return parseWmataJson(payload, city, source);
+    }
+
+    const fallbackLine = source.fallbackLine || city.id;
+    const amtrakRows = parseAmtraker(payload, city);
+    if (amtrakRows.length) return amtrakRows;
+
+    const gtfsJsonRows = parseGtfsRealtimeJson(payload, city, fallbackLine, source);
+    if (gtfsJsonRows.length) return gtfsJsonRows;
+
+    return parseGenericGeoJson(payload, city, fallbackLine, source);
+  }
+
   return entities
     .map((entity, index) => {
       const vehicle = entity?.vehicle || entity;
@@ -1098,6 +1201,11 @@ async function loadSourceData(city, source) {
   if (source.provider === "gtfsrt-json") {
     const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).json());
     return parseGtfsRealtimeJson(data, city, source.fallbackLine || city.id, source);
+  }
+
+  if (source.provider === "web-scrape-json") {
+    const data = await fetchFirst(endpoints, async (url) => (await fetchWithTimeout(url, requestInit)).text());
+    return parseScrapedTransitRows(data, city, source);
   }
 
   if (source.provider === "mobilitydb-gtfsrt-discovery") {
