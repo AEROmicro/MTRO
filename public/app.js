@@ -26,7 +26,10 @@ const CITIES = [
   { id: "toronto", name: "Toronto", center: [43.6532, -79.3832], zoom: 10, bbox: [43.90, -79.70, 43.50, -79.05], provider: "multi", timezone: "America/Toronto" },
   { id: "london", name: "London", center: [51.5072, -0.1276], zoom: 10, bbox: [51.70, -0.55, 51.28, 0.30], provider: "multi", timezone: "Europe/London" },
   { id: "amsterdam", name: "Amsterdam", center: [52.3676, 4.9041], zoom: 11, bbox: [52.50, 4.65, 52.25, 5.10], provider: "multi", timezone: "Europe/Amsterdam" },
-  { id: "paris", name: "Paris", center: [48.8566, 2.3522], zoom: 10, bbox: [49.10, 2.15, 48.70, 2.55], provider: "multi", timezone: "Europe/Paris" }
+  { id: "paris", name: "Paris", center: [48.8566, 2.3522], zoom: 10, bbox: [49.10, 2.15, 48.70, 2.55], provider: "multi", timezone: "Europe/Paris" },
+  { id: "los-angeles", name: "Los Angeles", center: [34.0522, -118.2437], zoom: 10, bbox: [34.35, -118.70, 33.65, -117.90], provider: "multi", timezone: "America/Los_Angeles" },
+  { id: "berlin", name: "Berlin", center: [52.5200, 13.4050], zoom: 11, bbox: [52.70, 13.00, 52.30, 13.80], provider: "multi", timezone: "Europe/Berlin" },
+  { id: "madrid", name: "Madrid", center: [40.4168, -3.7038], zoom: 11, bbox: [40.60, -3.90, 40.25, -3.50], provider: "multi", timezone: "Europe/Madrid" }
 ];
 
 const FARES = [
@@ -39,7 +42,10 @@ const FARES = [
   { id: "boston", cityName: "Boston", fare: "$2.40 subway base fare" },
   { id: "london", cityName: "London", fare: "£2.80 Tube base fare (pay-as-you-go)" },
   { id: "amsterdam", cityName: "Amsterdam", fare: "€3.40 GVB 1-hour ticket" },
-  { id: "paris", cityName: "Paris", fare: "€2.50 t+ single ticket" }
+  { id: "paris", cityName: "Paris", fare: "€2.50 t+ single ticket" },
+  { id: "los-angeles", cityName: "Los Angeles", fare: "$1.75 LA Metro base fare" },
+  { id: "berlin", cityName: "Berlin", fare: "€3.80 AB single ticket" },
+  { id: "madrid", cityName: "Madrid", fare: "€1.50+ Metro base fare" }
 ];
 
 const TRANSLATIONS = {

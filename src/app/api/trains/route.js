@@ -22,13 +22,6 @@ function trimTrailingSlashes(value) {
   return String(value || "").replace(/\/+$/, "");
 }
 
-function createStrictKeyedSources(keys, createSource) {
-  return Array.isArray(keys) && keys.length
-    ? keys.map((key) => createSource(key)).filter(Boolean)
-    : [];
-}
-
-const BART_PUBLIC_API_KEY = process.env.BART_API_KEY || "MW9S-E7SL-26DU-VV8V";
 const WMATA_DEMO_API_KEY = String(process.env.WMATA_DEMO_API_KEY || "e13626d03d8e4c03ac07f95541b3091b").trim();
 const WMATA_API_KEYS = parseApiKeys(
   process.env.WMATA_API_KEYS,
@@ -40,18 +33,6 @@ const WMATA_EFFECTIVE_API_KEYS = WMATA_API_KEYS.length
   ? WMATA_API_KEYS
   : parseApiKeys(WMATA_DEMO_API_KEY);
 const MTA_API_KEY = process.env.MTA_API_KEY;
-const METRA_API_KEYS = parseApiKeys(
-  process.env.METRA_API_KEYS,
-  process.env.METRA_API_KEY
-);
-const CTA_API_KEYS = parseApiKeys(
-  process.env.CTA_API_KEYS,
-  process.env.CTA_API_KEY
-);
-const BAY_AREA_511_API_KEYS = parseApiKeys(
-  process.env.BAY_AREA_511_API_KEYS,
-  process.env.BAY_AREA_511_API_KEY
-);
 const MOBILITY_DATABASE_API_BASE = trimTrailingSlashes(process.env.MOBILITY_DATABASE_API_BASE || "https://api.mobilitydatabase.org");
 const MOBILITY_DATABASE_ACCESS_TOKEN = String(process.env.MOBILITY_DATABASE_ACCESS_TOKEN || "").trim();
 const MOBILITY_DATABASE_REFRESH_TOKEN = String(process.env.MOBILITY_DATABASE_REFRESH_TOKEN || "").trim();
@@ -63,22 +44,6 @@ const AMTRAKER_ENDPOINTS = [
   "https://api-v3.amtraker.com/v3/trains",
   "https://api-v3.amtraker.com/v1/trains"
 ];
-const BART_ENDPOINTS = [...new Set([
-  `https://api.bart.gov/gtfsrt/vehicleposition.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  `https://api.bart.gov/gtfsrt/vehiclepositions.aspx?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  `https://api.bart.gov/gtfsrt/vehicleposition.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  `https://api.bart.gov/gtfsrt/vehiclepositions.pb?api_key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  "https://api.bart.gov/gtfsrt/vehiclepositions.aspx",
-  "https://api.bart.gov/gtfsrt/vehicleposition.aspx",
-  "https://api.bart.gov/gtfsrt/vehicleposition.pb",
-  "https://api.bart.gov/gtfsrt/vehiclepositions.pb",
-  // BART has historically served anonymous GTFS-RT over plain HTTP; keep unauthenticated
-  // HTTP fallbacks only after all HTTPS options so legacy-only upstream paths still work.
-  "http://api.bart.gov/gtfsrt/vehiclepositions.aspx",
-  "http://api.bart.gov/gtfsrt/vehicleposition.aspx",
-  "http://api.bart.gov/gtfsrt/vehicleposition.pb",
-  "http://api.bart.gov/gtfsrt/vehiclepositions.pb"
-])];
 const MBTA_GTFSRT_ENDPOINTS = [
   "https://cdn.mbta.com/realtime/VehiclePositions.pb"
 ];
@@ -131,36 +96,9 @@ const WMATA_BUS_SOURCES = WMATA_EFFECTIVE_API_KEYS.map((key) => ({
   defaultType: "bus",
   headers: { api_key: key }
 }));
-const METRA_ENDPOINTS = [
-  "https://gtfspublic.metrarail.com/gtfs/public/positions",
-  ...METRA_API_KEYS.map((key) => `https://gtfspublic.metrarail.com/gtfs/public/positions?api_token=${encodeURIComponent(key)}`)
-].filter(Boolean);
-const CTA_TRAIN_TRACKER_ENDPOINTS = CTA_API_KEYS.map(
-  (key) => `https://lapi.transitchicago.com/api/1.0/ttpositions.aspx?key=${encodeURIComponent(key)}&outputType=JSON`
-);
-const CTA_BUS_TRACKER_ENDPOINTS = CTA_API_KEYS.map(
-  (key) => `https://www.ctabustracker.com/bustime/api/v2/getvehicles?key=${encodeURIComponent(key)}&format=json&tmres=s`
-);
 const MCTS_ENDPOINTS = [
   "https://realtime.ridemcts.com/gtfsrt/vehicles"
 ];
-const BAY_AREA_511_AGENCIES = [
-  { agency: "RG", fallbackLine: "511 Regional", label: "511 Regional GTFS-RT" },
-  { agency: "SF", fallbackLine: "SFMTA Muni", label: "511 SFMTA GTFS-RT", defaultType: "tram" },
-  { agency: "AC", fallbackLine: "AC Transit", label: "511 AC Transit GTFS-RT", defaultType: "bus" },
-  { agency: "SC", fallbackLine: "VTA", label: "511 VTA GTFS-RT", defaultType: "tram" },
-  { agency: "CT", fallbackLine: "Caltrain", label: "511 Caltrain GTFS-RT", defaultType: "train" }
-];
-const BAY_AREA_511_SOURCES = createStrictKeyedSources(
-  BAY_AREA_511_API_KEYS,
-  (key) => BAY_AREA_511_AGENCIES.map((source) => ({
-    provider: "gtfsrt-protobuf",
-    endpoints: [`https://api.511.org/Transit/VehiclePositions?api_key=${encodeURIComponent(key)}&agency=${encodeURIComponent(source.agency)}`],
-    fallbackLine: source.fallbackLine,
-    label: source.label,
-    defaultType: source.defaultType
-  }))
-).flat();
 const MTA_NYCT_ENDPOINTS = [
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
   "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct/gtfs"
@@ -214,23 +152,29 @@ const NEXTBUS_ENDPOINTS = {
 const TTC_ENDPOINTS = [
   "https://bustime.ttc.ca/gtfsrt/vehicles"
 ];
-const BAY_AREA_BART_STATION_ENDPOINTS = [
-  // Keep both forms: keyed URL first for compatibility with stricter upstream behavior,
-  // then anonymous fallback for deployments that intentionally run fully keyless.
-  `https://api.bart.gov/api/stn.aspx?cmd=stns&json=y&key=${encodeURIComponent(BART_PUBLIC_API_KEY)}`,
-  "https://api.bart.gov/api/stn.aspx?cmd=stns&json=y"
+const BAY_AREA_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/msu-econ-data-analytics/course-materials/001e6a2d75a998b161251d582c7323f55af1ec78/lecture-slides/12-Spatial/data/bart_stations_2019.geojson"
 ];
-const LONDON_TFL_STOPPOINT_ENDPOINTS = [
-  "https://api.tfl.gov.uk/StopPoint/Mode/tube,overground,dlr,elizabeth-line,tram,bus"
+const CHICAGO_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Chicago/Chicago.geojson"
 ];
-const PARIS_IDFM_STOPS_ENDPOINTS = [
-  "https://data.iledefrance-mobilites.fr/api/explore/v2.1/catalog/datasets/arrets/records?limit=500"
+const LONDON_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/London/London.geojson"
 ];
-const AMSTERDAM_OVAPI_ENDPOINTS = [
-  "https://v0.ovapi.nl/vehiclePositions"
+const AMSTERDAM_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Amsterdam/Amsterdam.geojson"
 ];
-const AMSTERDAM_STOPS_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Amsterdam/amsterdam-public-transport-stops-dataset/main/stops.geojson"
+const PARIS_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Paris/Paris.geojson"
+];
+const LOS_ANGELES_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Los%20Angeles/Los%20Angeles.geojson"
+];
+const BERLIN_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Berlin/Berlin.geojson"
+];
+const MADRID_OPEN_DATA_MIRROR_ENDPOINTS = [
+  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Madrid/Madrid.geojson"
 ];
 const MOBILITY_DATABASE_CITY_FILTERS = {
   "washington-dc": { country_code: "US", subdivision_name: "District of Columbia", municipality: "Washington" },
@@ -246,7 +190,10 @@ const MOBILITY_DATABASE_CITY_FILTERS = {
   toronto: { country_code: "CA", subdivision_name: "Ontario", municipality: "Toronto" },
   london: { country_code: "GB", subdivision_name: "England", municipality: "London" },
   amsterdam: { country_code: "NL", subdivision_name: "Noord-Holland", municipality: "Amsterdam" },
-  paris: { country_code: "FR", subdivision_name: "Île-de-France", municipality: "Paris" }
+  paris: { country_code: "FR", subdivision_name: "Île-de-France", municipality: "Paris" },
+  "los-angeles": { country_code: "US", subdivision_name: "California", municipality: "Los Angeles" },
+  berlin: { country_code: "DE", subdivision_name: "Berlin", municipality: "Berlin" },
+  madrid: { country_code: "ES", subdivision_name: "Community of Madrid", municipality: "Madrid" }
 };
 
 function createMobilityDatabaseSource(cityId, fallbackLine, defaultType = "train", options = {}) {
@@ -404,29 +351,12 @@ const CITIES = [
     bbox: [38.10, -122.75, 37.20, -121.60],
     sources: [
       {
-        provider: "gtfsrt-protobuf",
-        endpoints: BART_ENDPOINTS,
-        fallbackLine: "BART",
-        label: "BART GTFS-RT",
-        defaultType: "train"
-      },
-      { provider: "gtfsrt-json", endpoints: BAY_AREA_BART_STATION_ENDPOINTS, fallbackLine: "BART", label: "BART Stations", defaultType: "station" },
-      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.sfmuni, fallbackLine: "SF Muni", label: "NextBus SF Muni", defaultType: "tram" },
-      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.acTransit, fallbackLine: "AC Transit", label: "NextBus AC Transit", defaultType: "bus" },
-      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.vta, fallbackLine: "VTA", label: "NextBus VTA", defaultType: "tram" },
-      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.samTrans, fallbackLine: "SamTrans", label: "NextBus SamTrans", defaultType: "bus" },
-      ...BAY_AREA_511_SOURCES,
-      ...createMobilityDatabaseSourceBundle("bay-area", "Bay Area Transit"),
-      ...createMobilityDatabaseSourceBundle("bay-area", "Bay Area Transit", "bus"),
-      createMobilityDatabaseSource("bay-area", "Bay Area Transit", "bus", {
-        label: "Mobility Database GTFS-RT (Bay Area wide)",
-        includeMunicipality: false,
-        officialFilter: "official-and-community",
-        mobilityDatabase: { subdivision_name: "California", country_code: "US", entity_types: "vp" }
-      }),
-      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
-      createTransitousSource("Transitous"),
-      createTransitousSource("Bay Area Transit", "bus")
+        provider: "gtfsrt-json",
+        endpoints: BAY_AREA_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Bay Area Transit",
+        label: "Bay Area Open Data mirror",
+        defaultType: "station"
+      }
     ]
   },
   {
@@ -490,22 +420,13 @@ const CITIES = [
     provider: "multi",
     bbox: [42.15, -88.10, 41.60, -87.45],
     sources: [
-      { provider: "gtfsrt-protobuf", endpoints: METRA_ENDPOINTS, fallbackLine: "Metra", label: "Metra GTFS-RT" },
-      { provider: "web-scrape-json", endpoints: CTA_TRAIN_TRACKER_ENDPOINTS, fallbackLine: "CTA", label: "CTA Train Tracker", defaultType: "train" },
-      { provider: "web-scrape-json", endpoints: CTA_BUS_TRACKER_ENDPOINTS, fallbackLine: "CTA", label: "CTA Bus Tracker", defaultType: "bus" },
-      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.cta, fallbackLine: "CTA", label: "NextBus CTA", defaultType: "bus" },
-      { provider: "nextbus-json", endpoints: NEXTBUS_ENDPOINTS.pace, fallbackLine: "Pace", label: "NextBus Pace", defaultType: "bus" },
-      ...createMobilityDatabaseSourceBundle("chicago", "Chicago Transit"),
-      ...createMobilityDatabaseSourceBundle("chicago", "Chicago Transit", "bus"),
-      createMobilityDatabaseSource("chicago", "Chicago Transit", "bus", {
-        label: "Mobility Database GTFS-RT (Chicago wide)",
-        includeMunicipality: false,
-        officialFilter: "official-and-community",
-        mobilityDatabase: { subdivision_name: "Illinois", country_code: "US", entity_types: "vp" }
-      }),
-      { provider: "amtraker", endpoints: AMTRAKER_ENDPOINTS, label: "Amtrak" },
-      createTransitousSource("Chicago Transit"),
-      createTransitousSource("Chicago Transit", "bus")
+      {
+        provider: "gtfsrt-json",
+        endpoints: CHICAGO_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Chicago Transit",
+        label: "Chicago Open Data mirror",
+        defaultType: "station"
+      }
     ]
   },
   {
@@ -538,17 +459,13 @@ const CITIES = [
     provider: "multi",
     bbox: [51.70, -0.55, 51.28, 0.30],
     sources: [
-      { provider: "gtfsrt-json", endpoints: LONDON_TFL_STOPPOINT_ENDPOINTS, fallbackLine: "TfL", label: "TfL StopPoint", defaultType: "station" },
-      ...createMobilityDatabaseSourceBundle("london", "London Transit"),
-      ...createMobilityDatabaseSourceBundle("london", "London Transit", "bus"),
-      createMobilityDatabaseSource("london", "London Transit", "bus", {
-        label: "Mobility Database GTFS-RT (London wide)",
-        includeMunicipality: false,
-        officialFilter: "official-and-community",
-        mobilityDatabase: { subdivision_name: "England", country_code: "GB", entity_types: "vp" }
-      }),
-      createTransitousSource("London Transit"),
-      createTransitousSource("London Transit", "bus")
+      {
+        provider: "gtfsrt-json",
+        endpoints: LONDON_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "London Transit",
+        label: "London Open Data mirror",
+        defaultType: "station"
+      }
     ]
   },
   {
@@ -556,18 +473,13 @@ const CITIES = [
     provider: "multi",
     bbox: [52.50, 4.65, 52.25, 5.10],
     sources: [
-      { provider: "gtfsrt-json", endpoints: AMSTERDAM_OVAPI_ENDPOINTS, fallbackLine: "GVB", label: "OVapi Vehicle Positions", defaultType: "bus" },
-      { provider: "gtfsrt-json", endpoints: AMSTERDAM_STOPS_ENDPOINTS, fallbackLine: "GVB", label: "Amsterdam Stops Dataset", defaultType: "station" },
-      ...createMobilityDatabaseSourceBundle("amsterdam", "Amsterdam Transit"),
-      ...createMobilityDatabaseSourceBundle("amsterdam", "Amsterdam Transit", "bus"),
-      createMobilityDatabaseSource("amsterdam", "Amsterdam Transit", "bus", {
-        label: "Mobility Database GTFS-RT (Amsterdam wide)",
-        includeMunicipality: false,
-        officialFilter: "official-and-community",
-        mobilityDatabase: { subdivision_name: "Noord-Holland", country_code: "NL", entity_types: "vp" }
-      }),
-      createTransitousSource("Amsterdam Transit"),
-      createTransitousSource("Amsterdam Transit", "bus")
+      {
+        provider: "gtfsrt-json",
+        endpoints: AMSTERDAM_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Amsterdam Transit",
+        label: "Amsterdam Open Data mirror",
+        defaultType: "station"
+      }
     ]
   },
   {
@@ -575,17 +487,55 @@ const CITIES = [
     provider: "multi",
     bbox: [49.10, 2.15, 48.70, 2.55],
     sources: [
-      { provider: "gtfsrt-json", endpoints: PARIS_IDFM_STOPS_ENDPOINTS, fallbackLine: "IDFM", label: "IDFM Stops", defaultType: "station" },
-      ...createMobilityDatabaseSourceBundle("paris", "Paris Transit"),
-      ...createMobilityDatabaseSourceBundle("paris", "Paris Transit", "bus"),
-      createMobilityDatabaseSource("paris", "Paris Transit", "bus", {
-        label: "Mobility Database GTFS-RT (Paris wide)",
-        includeMunicipality: false,
-        officialFilter: "official-and-community",
-        mobilityDatabase: { subdivision_name: "Île-de-France", country_code: "FR", entity_types: "vp" }
-      }),
-      createTransitousSource("Paris Transit"),
-      createTransitousSource("Paris Transit", "bus")
+      {
+        provider: "gtfsrt-json",
+        endpoints: PARIS_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Paris Transit",
+        label: "Paris Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "los-angeles",
+    provider: "multi",
+    bbox: [34.35, -118.70, 33.65, -117.90],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: LOS_ANGELES_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Los Angeles Transit",
+        label: "Los Angeles Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "berlin",
+    provider: "multi",
+    bbox: [52.70, 13.00, 52.30, 13.80],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: BERLIN_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Berlin Transit",
+        label: "Berlin Open Data mirror",
+        defaultType: "station"
+      }
+    ]
+  },
+  {
+    id: "madrid",
+    provider: "multi",
+    bbox: [40.60, -3.90, 40.25, -3.50],
+    sources: [
+      {
+        provider: "gtfsrt-json",
+        endpoints: MADRID_OPEN_DATA_MIRROR_ENDPOINTS,
+        fallbackLine: "Madrid Transit",
+        label: "Madrid Open Data mirror",
+        defaultType: "station"
+      }
     ]
   }
 ];

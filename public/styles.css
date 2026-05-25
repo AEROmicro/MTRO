@@ -167,7 +167,7 @@ body {
 
 .fares-toggle {
   position: fixed;
-  right: 16px;
+  left: 16px;
   bottom: 56px;
   z-index: 1100;
   border: 1px solid #3a3a3a;
@@ -269,7 +269,7 @@ body {
   }
 
   .fares-toggle {
-    right: 12px;
+    left: 12px;
     bottom: 48px;
   }
 
