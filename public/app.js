@@ -24,12 +24,9 @@ const CITIES = [
   { id: "chicago", name: "Chicago", center: [41.8781, -87.6298], zoom: 10, bbox: [42.15, -88.10, 41.60, -87.45], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
   { id: "milwaukee", name: "Milwaukee", center: [43.0389, -87.9065], zoom: 10, bbox: [43.25, -88.20, 42.85, -87.75], provider: "multi", directFallbackProvider: "amtraker", timezone: "America/Chicago" },
   { id: "toronto", name: "Toronto", center: [43.6532, -79.3832], zoom: 10, bbox: [43.90, -79.70, 43.50, -79.05], provider: "multi", timezone: "America/Toronto" },
-  { id: "tokyo", name: "Tokyo", center: [35.6762, 139.6503], zoom: 10, bbox: [35.90, 140.10, 35.45, 139.45], provider: "multi", timezone: "Asia/Tokyo" },
-  { id: "seoul", name: "Seoul", center: [37.5665, 126.9780], zoom: 10, bbox: [37.75, 127.25, 37.40, 126.75], provider: "multi", timezone: "Asia/Seoul" },
-  { id: "taipei", name: "Taipei", center: [25.0330, 121.5654], zoom: 11, bbox: [25.30, 121.75, 24.95, 121.35], provider: "multi", timezone: "Asia/Taipei" },
-  { id: "osaka", name: "Osaka", center: [34.6937, 135.5023], zoom: 11, bbox: [34.85, 135.75, 34.52, 135.30], provider: "multi", timezone: "Asia/Tokyo" },
-  { id: "hong-kong", name: "Hong Kong", center: [22.3193, 114.1694], zoom: 11, bbox: [22.56, 114.40, 22.15, 113.84], provider: "multi", timezone: "Asia/Hong_Kong" },
-  { id: "singapore", name: "Singapore", center: [1.3521, 103.8198], zoom: 11, bbox: [1.48, 104.07, 1.21, 103.60], provider: "multi", timezone: "Asia/Singapore" }
+  { id: "london", name: "London", center: [51.5072, -0.1276], zoom: 10, bbox: [51.70, -0.55, 51.28, 0.30], provider: "multi", timezone: "Europe/London" },
+  { id: "amsterdam", name: "Amsterdam", center: [52.3676, 4.9041], zoom: 11, bbox: [52.50, 4.65, 52.25, 5.10], provider: "multi", timezone: "Europe/Amsterdam" },
+  { id: "paris", name: "Paris", center: [48.8566, 2.3522], zoom: 10, bbox: [49.10, 2.15, 48.70, 2.55], provider: "multi", timezone: "Europe/Paris" }
 ];
 
 const FARES = [
@@ -40,12 +37,9 @@ const FARES = [
   { id: "toronto", cityName: "Toronto", fare: "CA$3.35 adult PRESTO" },
   { id: "washington-dc", cityName: "Washington, DC", fare: "$2.25 bus base fare" },
   { id: "boston", cityName: "Boston", fare: "$2.40 subway base fare" },
-  { id: "tokyo", cityName: "Tokyo", fare: "¥180+ (distance based)" },
-  { id: "seoul", cityName: "Seoul", fare: "₩1,500 base fare (card)" },
-  { id: "taipei", cityName: "Taipei", fare: "NT$20+ metro base fare" },
-  { id: "osaka", cityName: "Osaka", fare: "¥190+ metro base fare" },
-  { id: "hong-kong", cityName: "Hong Kong", fare: "HK$5+ (distance based)" },
-  { id: "singapore", cityName: "Singapore", fare: "S$1.09+ (distance based)" }
+  { id: "london", cityName: "London", fare: "£2.80 Tube base fare (pay-as-you-go)" },
+  { id: "amsterdam", cityName: "Amsterdam", fare: "€3.40 GVB 1-hour ticket" },
+  { id: "paris", cityName: "Paris", fare: "€2.50 t+ single ticket" }
 ];
 
 const TRANSLATIONS = {

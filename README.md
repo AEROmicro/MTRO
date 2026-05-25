@@ -52,9 +52,9 @@ For deployed environments, set these as platform secrets (for example, in Vercel
 - UTC and selected-city local time bar with timezone abbreviation
 - In-session past-data snapshots for quick playback
 - Language selector (English default + Spanish, French, German, Chinese)
-- Fares popout panel (left-side drawer) with expanded coverage across North America and Asia
+- Fares popout panel (left-side drawer) with expanded coverage across North America and Europe
 - Shared server-side city response caching to reduce duplicate upstream requests
-- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Milwaukee; Toronto; Tokyo; Seoul; Taipei; Osaka; Hong Kong; and Singapore
+- City scope focused on Washington, DC; New York City; Boston; Philadelphia; Bay Area; Seattle; Atlanta; Denver; Chicago; Milwaukee; Toronto; London; Amsterdam; and Paris
 - Multi-source API coverage for these cities including:
   - Mobility Database GTFS-RT feed discovery bundles per city (city official + regional official + regional community sources), including added bus-focused bundles
   - VRE GTFS-RT (Washington, DC area commuter rail)
@@ -63,7 +63,7 @@ For deployed environments, set these as platform secrets (for example, in Vercel
   - Keyless D.C. regional alternatives via Mobility Database discovery + NextBus feeds
   - MBTA vehicles API (Boston)
   - MBTA GTFS-RT + NextBus MBTA (Boston)
-  - BART GTFS-RT + 511 Regional + 511 SFMTA + 511 AC Transit + 511 VTA + 511 Caltrain + Mobility Database Bay Area-wide discovery (Bay Area)
+  - BART GTFS-RT + BART stations + 511 Regional + 511 SFMTA + 511 AC Transit + 511 VTA + 511 Caltrain + Mobility Database Bay Area-wide discovery (Bay Area)
   - NextBus SF Muni + NextBus AC Transit + NextBus VTA + NextBus SamTrans with legacy and `retro.umoiq.com` endpoint fallback (Bay Area)
   - Sound Transit GTFS-RT + fallbacks (Seattle)
   - MARTA GTFS-RT + fallbacks (Atlanta)
@@ -72,9 +72,8 @@ For deployed environments, set these as platform secrets (for example, in Vercel
   - Metra GTFS-RT + NextBus CTA + NextBus Pace + Chicago-wide Mobility Database discovery (Chicago)
   - MCTS GTFS-RT (Milwaukee)
   - TTC GTFS-RT + Mobility Database bundles + Amtraker + Transitous GTFS-RT (Toronto)
-  - Mobility Database + Transitous GTFS-RT bundles with added country-wide discovery for Tokyo and Seoul
-  - Seoul Subway web-scrape JSON source + Mobility Database + Transitous GTFS-RT (Seoul)
-  - Taipei TDX bus vehicle feed + Mobility Database + Transitous GTFS-RT (Taipei)
-  - Mobility Database + Transitous GTFS-RT bundles (Osaka, Hong Kong, Singapore)
+  - TfL StopPoint + Transitous GTFS-RT bundles (London)
+  - OVapi vehicle positions + Amsterdam stops dataset + Transitous GTFS-RT bundles (Amsterdam)
+  - Île-de-France Mobilités stops + Transitous GTFS-RT bundles (Paris)
   - Amtraker US network
   - Transitous GTFS-RT fallback (rail + bus focused variants)
