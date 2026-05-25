@@ -152,29 +152,46 @@ const NEXTBUS_ENDPOINTS = {
 const TTC_ENDPOINTS = [
   "https://bustime.ttc.ca/gtfsrt/vehicles"
 ];
+// Pin to a known-good MAWI snapshot so mirror URLs stay deterministic across deployments.
+// Validated on 2026-05-25 against Bonny94ITA/MAWI for city stop/station coverage.
+// Update this value (or MAWI_MIRROR_COMMIT env var) after validating a newer MAWI commit.
+const MAWI_MIRROR_DEFAULT_COMMIT = "83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426";
+const MAWI_MIRROR_COMMIT = String(process.env.MAWI_MIRROR_COMMIT || MAWI_MIRROR_DEFAULT_COMMIT).trim() || MAWI_MIRROR_DEFAULT_COMMIT;
+// Path notes:
+// - articles1: published MAWI article batch directory
+// - no_trf: MAWI's no-translation-processing variant
+// - en: English city dataset subfolder
+const MAWI_MIRROR_BASE = `https://raw.githubusercontent.com/Bonny94ITA/MAWI/${MAWI_MIRROR_COMMIT}/results/articles1/no_trf/en`;
+const buildMawiCityMirrorUrl = (cityName) => `${MAWI_MIRROR_BASE}/${encodeURIComponent(cityName)}/${encodeURIComponent(cityName)}.geojson`;
+const BAY_AREA_MIRROR_REPO = "msu-econ-data-analytics/course-materials";
+// Validated on 2026-05-25; this commit contains the BART 2019 station GeoJSON snapshot.
+const BAY_AREA_MIRROR_COMMIT = "001e6a2d75a998b161251d582c7323f55af1ec78";
+const BAY_AREA_MIRROR_PATH = "lecture-slides/12-Spatial/data/bart_stations_2019.geojson";
 const BAY_AREA_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/msu-econ-data-analytics/course-materials/001e6a2d75a998b161251d582c7323f55af1ec78/lecture-slides/12-Spatial/data/bart_stations_2019.geojson"
+  // MAWI does not publish a dedicated "Bay Area" dataset, so keep a BART-focused mirror here.
+  // This dataset is a 2019 station snapshot; station-level layouts may lag current system changes.
+  `https://raw.githubusercontent.com/${BAY_AREA_MIRROR_REPO}/${BAY_AREA_MIRROR_COMMIT}/${BAY_AREA_MIRROR_PATH}`
 ];
 const CHICAGO_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Chicago/Chicago.geojson"
+  buildMawiCityMirrorUrl("Chicago")
 ];
 const LONDON_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/London/London.geojson"
+  buildMawiCityMirrorUrl("London")
 ];
 const AMSTERDAM_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Amsterdam/Amsterdam.geojson"
+  buildMawiCityMirrorUrl("Amsterdam")
 ];
 const PARIS_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Paris/Paris.geojson"
+  buildMawiCityMirrorUrl("Paris")
 ];
 const LOS_ANGELES_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Los%20Angeles/Los%20Angeles.geojson"
+  buildMawiCityMirrorUrl("Los Angeles")
 ];
 const BERLIN_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Berlin/Berlin.geojson"
+  buildMawiCityMirrorUrl("Berlin")
 ];
 const MADRID_OPEN_DATA_MIRROR_ENDPOINTS = [
-  "https://raw.githubusercontent.com/Bonny94ITA/MAWI/83c8b08bdc1b59a7ad95c4acbda7bb9b697c1426/results/articles1/no_trf/en/Madrid/Madrid.geojson"
+  buildMawiCityMirrorUrl("Madrid")
 ];
 const MOBILITY_DATABASE_CITY_FILTERS = {
   "washington-dc": { country_code: "US", subdivision_name: "District of Columbia", municipality: "Washington" },
